@@ -92,5 +92,4 @@ function closeWin(e){
 
 function onLoad(e){
   $.wv.setScalesPageToFit(true);
-  Ti.API.info("okkkkkkkk")
 }
