@@ -1,0 +1,12 @@
+<Alloy>
+	<Window class="container">
+		<Button id="loginBtn" onClick="loginBtnClick">Dropbox Login</Button>
+		<TableView id="apiListTV" onClick="callMethod"/>
+		<View id="activityBgView">
+			<View id="activityContainerView">
+				<ActivityIndicator/>
+				<Label id="activityLbl"/>
+			</View>
+		</View>
+	</Window>
+</Alloy>

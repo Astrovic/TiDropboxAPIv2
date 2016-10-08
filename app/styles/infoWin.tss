@@ -1,0 +1,118 @@
+".container": {
+  top: "0dp",
+  width: '100%',
+  backgroundColor: "rgb(255,255,255,0.5)"
+}
+
+".container[platform=ios]": {
+  top: "20dp"
+}
+
+"#containerView": {
+  top: "50dp",
+  left: "45dp",
+  right: "45dp",
+  bottom: "45dp",
+  border: 5,
+  backgroundColor: '#fff',
+  borderColor: "#0bb1d5",
+  borderRadius: 20,
+  borderWidth: 5,
+  zIndex: -1,
+  isTablet : true
+  //transform: null
+}
+"#containerView[formFactor=handheld]": {
+  left: "5dp",
+  right: "5dp",
+  bottom: "5dp",
+  isTablet : false
+}
+
+"#closeLbl": {
+  textAlign: 'center',
+  font: {
+      fontWeight: 'bold',
+      fontSize: '20sp'
+  },
+  text: 'X',
+  top: "5dp",
+  right: "5dp",
+  width: "40dp",
+  height: "40dp",
+  backgroundColor: '#fff',
+  borderColor: "#0bb1d5",
+  borderRadius: 20,
+  borderWidth: 5,
+  color: "#0bb1d5"
+}
+
+"#wv": {
+  top: "5dp",
+  right: "5dp",
+  bottom: "100dp",
+  left: "5dp",
+  autoDetect: [Ti.UI.AUTOLINK_NONE],
+  scalesPageToFit : true
+}
+"#wv[fotmFactor=tablet]": {
+  left: "10dp",
+  right: "10dp",
+  bottom: "50dp",
+  scalesPageToFit : false
+}
+
+"#showTestParamsLbl": {
+  height : "80dp",
+  width : "150dp",
+  bottom: "10dp",
+  backgroundColor: '#0bb1d5',
+  borderColor: "#fff",
+  borderRadius: 20,
+  borderWidth: 5,
+  color: "#fff",
+  text: "Show test params",
+  font: {
+      fontWeight: 'bold',
+      fontSize: '20sp'
+  },
+  textAlign: "center"
+}
+"#showTestParamsLbl[formFactor=handheld]": {
+  height : "40dp",
+  width : "160dp",
+  bottom: "10dp",
+  font: {
+      fontWeight: 'bold',
+      fontSize: '16sp'
+  }
+}
+
+"#testParamsContainer": {
+  visible : false,
+  backgroundColor: '#fff',
+  borderColor: "#0bb1d5",
+  borderRadius: 20,
+  borderWidth: 5,
+  left : "10dp",
+  right : "10dp"
+}
+"#testParamsContainer[formFactor=tablet]": {
+  height : "500dp"
+}
+"#testParamsContainer[formFactor=handheld]": {
+  top : "10dp",
+  bottom : "50dp"
+}
+
+"#testParamsLbl": {
+  font: {
+      //fontWeight: 'bold',
+      fontSize: '16sp'
+  },
+  color: "#0bb1d5",
+  left : "10dp",
+  right : "10dp",
+  top : "10dp",
+  bottom : "10dp"
+}

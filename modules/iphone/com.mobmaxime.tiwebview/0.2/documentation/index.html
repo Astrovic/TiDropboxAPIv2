@@ -1,0 +1,58 @@
+<h1>TiWebview Module</h1>
+<h2>Description</h2>
+<p>This is a simple extension to Appcelerator Titanium that allows you to set cookies and delete cookiew for TiWebViews on iOS.</p>
+<h2>Accessing the TiWebview Module</h2>
+<p>To access this module from JavaScript, you would do the following:</p>
+<pre><code>var TiWebview = require("com.mobmaxime.TiWebview");
+</code></pre>
+<p>The TiWebview variable is a reference to the Module object. </p>
+<h2>Requirements</h2>
+<ul>
+<li>iOS version 4.3 or later</li>
+<li>Xcode 4.5 or later</li>
+</ul>
+<p>The SDK also requires that the following frameworks are available when you build your application:</p>
+<ul>
+<li>Foudation</li>
+</ul>
+<h2>Reference</h2>
+<p>See Sample Here : https://github.com/JigarM/TiWebView</p>
+<h2>Functions</h2>
+<h3>TiWebview.listCookies(arg)</h3>
+<p>It returns a List of coockies object of Current Webview Object.</p>
+<h4>Arguments</h4>
+<p>parameter(arg): A Simple Webview URL..</p>
+<h4>Example:</h4>
+<pre><code>var webview = Ti.UI.createWebView({
+    url : 'http://github.com/JigarM'
+});
+
+webview.addEventListener('load', function(e) {
+    var url = e.url;
+    Ti.API.info('Cookies of URL ==&gt;  ' + url);
+
+    var Cookies = TiWebview.listCookies(url);
+    var count = 0;
+    for (var key in Cookies) {
+        Ti.API.info('Name ==&gt; ' + key + ' and Value ==&gt;: ' + Cookies[key]);
+        count++;
+    }
+
+    if (Cookies.logged_in) {
+        Ti.API.info('is logged_in? ==&gt; ' + Cookies.logged_in);
+    }
+</code></pre>
+<p>});</p>
+<h3>TiWebview.deleteAllCoockie(arg)</h3>
+<p>It Deletes a List of coockies object of Provided URL..</p>
+<h4>Arguments</h4>
+<p>parameter(arg): A Domain or URL..</p>
+<h4>Example:</h4>
+<pre><code>TiWebview.deleteAllCoockie("github.com");
+</code></pre>
+<h2>Usage</h2>
+<p>See example.</p>
+<h2>Author</h2>
+<p>Jigar Maheshwari</p>
+<h2>License</h2>
+<p>Copyright(c) 2014 by Mobmaxime. All Rights Reserved. Please see the LICENSE file included in the distribution for further details.</p>

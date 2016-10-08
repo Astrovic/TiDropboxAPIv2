@@ -1,0 +1,12 @@
+<Alloy>
+	<Window class="container">
+		<Label id="closeLbl" onClick="closeWin"/>
+		<View id="containerView">
+			<WebView id="wv" onLoad="onLoad"/>
+			<Label id="showTestParamsLbl" onClick="showHideTestParams"/>
+			<ScrollView id="testParamsContainer">
+				<Label id="testParamsLbl" onClick="showHideTestParams"/>
+			</ScrollView>
+		</View>
+	</Window>
+</Alloy>

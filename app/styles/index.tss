@@ -1,0 +1,77 @@
+".container": {
+	backgroundColor:"white"
+}
+
+"Button": {
+	top : "30dp",
+	width: "200dp",
+	height: "50dp",
+	borderRadius: 5,
+	backgroundColor: "#0bb1d5",
+	color : "#fff",
+	font: {
+		fontSize: "20sp",
+		fontWeight: "bold"
+	}
+}
+"utton[formFactor=handheld]": {
+  font: {
+      fontWeight: 'bold',
+      fontSize: '16sp'
+  }
+}
+
+"TableView": {
+	top : "100dp",
+	bottom : "0dp",
+	width: "100%",
+	backgroundColor: "#0bb1d5",
+	rowHeight: "50dp",
+	isTablet : false
+}
+
+"TableView[formFactor=tablet]": {
+	isTablet : true
+}
+
+"ActivityIndicator": {
+	top : "20dp",
+	style: Ti.UI.ActivityIndicatorStyle.BIG,
+	color : "#fff",
+	font: {
+		fontSize: "20sp",
+		fontWeight: "bold"
+	},
+	zIndex: 1,
+	visible : true,
+	message: "Loading..."
+}
+
+"#activityBgView": {
+	width : "100%",
+	height: "100%",
+	visible : false,
+	backgroundColor: "rgb(255,255,255,0.5)"
+}
+
+"#activityContainerView": {
+	width : "300dp",
+	height: "150dp",
+	backgroundColor: "#0bb1d5",
+	borderRadius: 20
+}
+
+"#activityLbl": {
+	bottom : "20dp",
+	left : "10dp",
+	right : "10dp",
+	height : Ti.UI.SIZE,
+	color : "#fff",
+	font: {
+		fontSize: "16sp",
+		fontWeight: "bold"
+	},
+	textAlign: "center",
+	zIndex: 1,
+	visible : true
+}

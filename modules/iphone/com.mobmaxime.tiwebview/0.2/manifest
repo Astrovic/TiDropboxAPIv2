@@ -1,0 +1,18 @@
+#
+# this is your module manifest and used by Titanium
+# during compilation, packaging, distribution, etc.
+#
+version: 0.2
+apiversion: 2
+architectures: armv7 i386 x86_64 arm64
+description: This is a simple extension to Appcelerator Titanium that allows you to set cookies and delete cookiew for TiWebViews on iOS.
+author: Jigar M
+license: Apache Public License
+copyright: Copyright (c) 2014 by Mobmaxime
+
+# these should not be edited
+name: TiWebview
+moduleid: com.mobmaxime.TiWebview
+guid: f13242b5-b355-47cb-aeef-982eb6c22c98
+platform: iphone
+minsdk: 5.0.0.GA
