@@ -22,7 +22,7 @@ var TiDropbox = {};
 (function() {
 
     var window;
-    var dropboxAPIv2 = require("dropboxAPIv2").dropboxAPIv2;
+    var dropboxAPIv2 = require("../lib/dropboxAPIv2").dropboxAPIv2;
 
     TiDropbox.init = function(clientId, redirectUri) {
         TiDropbox.clientId = clientId;
@@ -59,7 +59,7 @@ var TiDropbox = {};
         };
 
         // Remove cookies
-        if(OS_IOS){
+        if(Ti.Platform.osname != "android"){
       		var path = Titanium.Filesystem.applicationDataDirectory;
       		var searchKey = path.search('Documents');
       		path = path.substring(0, searchKey);
@@ -203,7 +203,7 @@ var TiDropbox = {};
      */
     function showAuthorizeUI(pUrl) {
         window = Ti.UI.createWindow({
-            top: OS_IOS ? "20dp" : "0dp",
+            top: (Ti.Platform.osname != "android") ? "20dp" : "0dp",
             //modal: true,
             //fullscreen: true,
             width: '100%',
@@ -253,7 +253,7 @@ var TiDropbox = {};
         Ti.API.debug('Setting:[' + Ti.UI.AUTODETECT_NONE + ']');
         webView.addEventListener('beforeload',
             function(e) {
-                if (e.url.indexOf('http://www.clearlyinnovative.com/') != -1 || e.url.indexOf('https://www.dropbox.com/') != -1) {
+                if (e.url.indexOf(TiDropbox.redirectUri) != -1 || e.url.indexOf('https://www.dropbox.com/') != -1) {
                     Titanium.API.debug(e);
                     authorizeUICallback(e);
                     webView.stopLoading = true;
@@ -326,10 +326,10 @@ var TiDropbox = {};
             destroyAuthorizeUI();
 
         } else if ('https://www.dropbox.com/' == e.url) {
-            alert('tidropbox_logout', {});
+            Ti.API.debug('tidropbox_logout');
             destroyAuthorizeUI();
         } else if (e.url.indexOf('#error=access_denied') != -1) {
-            alert('tidropbox_access_denied', {});
+            Ti.API.debug('tidropbox_access_denied, you need a new token');
             destroyAuthorizeUI();
         }
 

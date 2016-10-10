@@ -15,7 +15,7 @@ www.facebook.com/astrovicApps
 ### Get started
 You need a [Dropbox App key], and a `redirect_uri` which must be configured on **Redirect URIs** field of your Dropbox App Settings, on *OAuth 2* section.
 ```js
-var TiDropbox = require("tidropbox").TiDropbox;
+var TiDropbox = require("ti.dropbox").TiDropbox;
 TiDropbox.init('<YOUR APP KEY HERE>', '<YOUR redirect_uri HERE>');
 ```
 ### OAauth 2 token flow
@@ -48,7 +48,7 @@ That's all. Simple :)
 
 #### Example of use
 ```js
-var TiDropbox = require("tidropbox").TiDropbox;
+var TiDropbox = require("ti.dropbox").TiDropbox;
 TiDropbox.init('<YOUR APP KEY HERE>', '<YOUR redirect_uri HERE>');
 
 // Check if I have a token

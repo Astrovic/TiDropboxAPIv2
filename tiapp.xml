@@ -57,7 +57,7 @@
     <theme>default</theme>
   </mobileweb>
   <modules>
-    <module platform="commonjs">ti.cloud</module>
+    <module platform="commonjs">ti.dropbox</module>
     <module platform="iphone" version="0.2">com.mobmaxime.tiwebview</module>
   </modules>
   <deployment-targets>

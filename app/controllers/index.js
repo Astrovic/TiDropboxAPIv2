@@ -1,4 +1,4 @@
-var TiDropbox = require("tidropbox").TiDropbox;
+var TiDropbox = require("ti.dropbox").TiDropbox;
 TiDropbox.init('e9tribefg77q4wg'/*<YOUR APP KEY HERE>*/, 'https://www.dropbox.com/'/*<YOUR redirect_uri HERE>*/);
 
 var dropboxAPIv2 = require("dropboxAPIv2").dropboxAPIv2;
