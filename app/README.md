@@ -45,8 +45,8 @@ TiDropbox.revokeAccessToken(function(){
 
 That's all. Simple :)
 
-
-#### Example of use
+# Example of use
+- ### File upload
 ```js
 var TiDropbox = require("ti.dropbox").TiDropbox;
 TiDropbox.init('<YOUR APP KEY HERE>', '<YOUR redirect_uri HERE>');
@@ -96,11 +96,82 @@ function onErrorCallback(e) {
     if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
         //The session has expired, I need a new token
         Ti.App.Properties.setString('DROPBOX_TOKENS',null);
+        login();
     };
 };
 ```
 
-#### Screenshots
+- ### File download
+```js
+var TiDropbox = require("ti.dropbox").TiDropbox;
+TiDropbox.init('<YOUR APP KEY HERE>', '<YOUR redirect_uri HERE>');
+
+// Check if I have a token
+if(Ti.App.Properties.getString('DROPBOX_TOKENS',null))){
+    login();
+ }else{
+    TiDropbox.revokeAccessToken(function(){
+        // Logout, do something...
+    });
+};
+
+function login(){
+    TiDropbox.generateAuthUrl(function(){
+        // I'm logged, now I can call any method (/lib/dropboxAPIv2.js)
+        // For example, if I want download Prime_Numbers.txt file from Dropbox App
+        var methodStr = "files/download";
+        var paramsObj: {
+            path: "/Homework/math/Prime_Numbers.txt"
+        };        
+        TiDropbox.callMethod(methodStr, paramsObj, null, onSuccessCallback, onErrorCallback)
+    });
+};
+
+// callback functions
+function onSuccessCallback(xhr) {
+  Ti.API.debug("onSuccessCallback checkins response-> " + xhr.responseText);
+
+  // Write downloaded data in a file
+  if(xhr.responseData){
+    var filePath = Titanium.Filesystem.applicationDataDirectory + "myDownloadedFile.txt";
+    var f = Titanium.Filesystem.getFile(filePath);
+    f.write(xhr.responseData);
+
+    // I check if I saved the file properly
+    setTimeout(function(){
+      Ti.API.debug(filePath + " exists? ---> " + file.exists());
+      if(f.exists()){
+        if(OS_IOS){
+          Ti.UI.iOS.createDocumentViewer({url:filePath}).show();
+        };
+      }else{
+        Titanium.UI.createAlertDialog({
+            title: "DOWNLOAD FAILED",
+            message: "Something went wrong in the file writing...",
+            buttonNames: ['OK']
+        }).show();
+      };
+    },1000);
+  };
+};
+
+function onErrorCallback(e) {
+    Ti.API.debug("onErrorCallback checkins response-> " + JSON.stringify(e));
+    Titanium.UI.createAlertDialog({
+        title: "METHOD FAILED",
+        message: JSON.stringify(e),
+        buttonNames: ['OK']
+    }).show();
+    if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
+        //The session has expired, I need a new token
+        Ti.App.Properties.setString('DROPBOX_TOKENS',null);
+        login();
+    };
+};
+```
+
+
+# Screenshots
 
 <img src="https://camo.githubusercontent.com/1c064d0eeb906d9588311dbff17dba082ec3b5f1/68747470733a2f2f70686f746f732d352e64726f70626f782e636f6d2f742f322f414143684e484b4c495a70465942565f7974766b39436e596830577551615f614f68694e4b4b75674b67496348512f31322f35333439363630392f706e672f33327833322f332f313437353933383830302f302f322f312e706e672f454c6554685f6b4547426b67416967432f544e66505946754175756f59635f5069536e64384b52536b513952565f6e71384471534536335a414658493f73697a655f6d6f64653d3326646c3d302673697a653d3132383078393630" width="300px" style="float:left; margin-right:1em;">
 

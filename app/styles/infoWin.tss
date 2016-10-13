@@ -55,7 +55,7 @@
   autoDetect: [Ti.UI.AUTOLINK_NONE],
   scalesPageToFit : true
 }
-"#wv[fotmFactor=tablet]": {
+"#wv[formFactor=tablet]": {
   left: "10dp",
   right: "10dp",
   bottom: "50dp",
