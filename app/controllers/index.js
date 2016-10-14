@@ -78,12 +78,28 @@ function loginBtnClick(e) {
   $.activityLbl.text = $.loginBtn.logged ? "Dropbox Logout..." : "Dropbox Login...";
   $.activityBgView.show();
   if(!$.loginBtn.logged){
-    TiDropbox.generateAuthUrl(function(){
-      createTest();
+    TiDropbox.generateAuthUrl(function(e){
+      Ti.API.info("generateAuthUrl checkins response-> " + JSON.stringify(e));
+      if(e.success){
+        createTest();
+      }else{
+        Titanium.UI.createAlertDialog({
+            title: "AUTH ACCESS TOKEN",
+            message: e.msg,
+            buttonNames: ['OK']
+        }).show();
+        checkToken();
+      };
     });
   }else{
-    TiDropbox.revokeAccessToken(function(){
-       checkToken();
+    TiDropbox.revokeAccessToken(function(e){
+      Ti.API.info("revokeAccessToken checkins response-> " + JSON.stringify(e));
+      Titanium.UI.createAlertDialog({
+          title: "REVOKE ACCESS TOKEN",
+          message: e.msg,
+          buttonNames: ['OK']
+      }).show();
+      checkToken();
     });
     removeCookieiOS();
   };

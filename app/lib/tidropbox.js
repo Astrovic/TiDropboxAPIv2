@@ -32,7 +32,7 @@ var TiDropbox = {};
         TiDropbox.API_URL = "https://api.dropboxapi.com/2/";
     };
 
-    TiDropbox.revokeAccessToken = function(revokeSuccess_callback) {
+    TiDropbox.revokeAccessToken = function(revokeAuth_callback) {
         TiDropbox.callMethod("auth/token/revoke", null, null, onSuccess_self, onFailed_self);
 
         function onSuccess_self() {
@@ -42,7 +42,11 @@ var TiDropbox = {};
                 buttonNames: ['OK']
             }).show();
             Ti.App.Properties.setString('DROPBOX_TOKENS',null);
-            revokeSuccess_callback();
+            revokeAuth_callback({
+                access_token: null,
+                success : true,
+                msg: "Access token successfully revoked"
+            });
         };
 
         function onFailed_self(e) {
@@ -53,9 +57,12 @@ var TiDropbox = {};
             }).show();
             if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
               Ti.App.Properties.setString('DROPBOX_TOKENS',null);
-              checkToken();
             };
-            revokeSuccess_callback();
+            revokeAuth_callback({
+                access_token: null,
+                success : false,
+                msg: "Invalid or expired access token"
+            });
         };
 
         // Remove cookies
@@ -65,14 +72,14 @@ var TiDropbox = {};
       		path = path.substring(0, searchKey);
       		path = path + 'Library/Cookies/';
       		var f = Ti.Filesystem.getFile(path);
-      		Ti.API.info("cookie path ---> " + path);
-      		Ti.API.info("cookie path exists() ---> " + f.exists());
+      		Ti.API.debug("cookie path ---> " + path);
+      		Ti.API.debug("cookie path exists() ---> " + f.exists());
       		if(f.exists()){
       			f.deleteDirectory(true);
       		};
       		f=null;
       	}else if(OS_ANDROID){
-      		Ti.API.info("Ti.Network.removeSystemCookie('"+Alloy.Globals.gateway+"','/','"+Alloy.Globals.net.shibCookie+"')");
+      		Ti.API.debug("Ti.Network.removeSystemCookie('"+Alloy.Globals.gateway+"','/','"+Alloy.Globals.net.shibCookie+"')");
       		Ti.Network.removeSystemCookie(Alloy.Globals.gateway,"/",Alloy.Globals.net.shibCookie);
       		Ti.Network.removeAllSystemCookies();
       	};
@@ -80,14 +87,25 @@ var TiDropbox = {};
     /**
      * displays the familiar web login dialog we all know and love
      *
-     * @params authSuccess_callback method called when successful
+     * @params auth_callback method called when successful
      *
      */
-    TiDropbox.generateAuthUrl = function(authSuccess_callback) {
+    TiDropbox.generateAuthUrl = function(auth_callback) {
 
-        if (authSuccess_callback != undefined) {
-            TiDropbox.success_callback = authSuccess_callback;
+        if (auth_callback != undefined) {
+            TiDropbox.auth_callback = auth_callback;
         }
+
+        if(!Ti.Network.online){
+          if (TiDropbox.auth_callback != undefined) {
+              TiDropbox.auth_callback({
+                  access_token: null,
+                  success : false,
+                  msg : "No internet connection"
+              });
+          }
+          return;
+        };
 
         showAuthorizeUI(
             String.format('https://www.dropbox.com/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s',
@@ -212,9 +230,9 @@ var TiDropbox = {};
         var transform = Ti.UI.create2DMatrix().scale(0);
         view = Ti.UI.createView({
             top: "50dp",
-            left: "45dp",
-            right: "45dp",
-            bottom: "45dp",
+            left: "5dp",
+            right: "5dp",
+            bottom: "5dp",
             border: 5,
             backgroundColor: '#fff',
             borderColor: "#0bb1d5",
@@ -262,7 +280,16 @@ var TiDropbox = {};
         webView.addEventListener('load', authorizeUICallback);
         view.add(webView);
 
-        closeLabel.addEventListener('click', destroyAuthorizeUI);
+        closeLabel.addEventListener('click', function(){
+          if (TiDropbox.auth_callback != undefined) {
+              TiDropbox.auth_callback({
+                  access_token: null,
+                  success : false,
+                  msg : "No access token... try again"
+              });
+          }
+          destroyAuthorizeUI();
+        });
         window.add(closeLabel);
 
         window.add(view);
@@ -316,10 +343,12 @@ var TiDropbox = {};
             token = token.substring(0, token.indexOf("&"));
             TiDropbox.ACCESS_TOKEN = token;
             Ti.App.Properties.setString('DROPBOX_TOKENS',TiDropbox.ACCESS_TOKEN);
-            Ti.API.info('tidropbox_token: ' + token);
-            if (TiDropbox.success_callback != undefined) {
-                TiDropbox.success_callback({
+            Ti.API.debug('tidropbox_token: ' + token);
+            if (TiDropbox.auth_callback != undefined) {
+                TiDropbox.auth_callback({
                     access_token: token,
+                    success : true,
+                    msg : "Ok, you have an access token"
                 });
             }
 
@@ -327,9 +356,23 @@ var TiDropbox = {};
 
         } else if ('https://www.dropbox.com/' == e.url) {
             Ti.API.debug('tidropbox_logout');
+            if (TiDropbox.auth_callback != undefined) {
+                TiDropbox.auth_callback({
+                    access_token: null,
+                    success : false,
+                    msg : "No access token... try again"
+                });
+            }
             destroyAuthorizeUI();
         } else if (e.url.indexOf('#error=access_denied') != -1) {
             Ti.API.debug('tidropbox_access_denied, you need a new token');
+            if (TiDropbox.auth_callback != undefined) {
+                TiDropbox.auth_callback({
+                    access_token: null,
+                    success : false,
+                    msg : 'Access denied, you need a new token'
+                });
+            }
             destroyAuthorizeUI();
         }
 
