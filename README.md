@@ -1,5 +1,7 @@
 # Titanium Appcelerator Javascript Dropbox API v2
 
+[![gitTio](http://img.shields.io/badge/on-gittio-00B4CC.svg)](http://gitt.io/component/ti.dropbox)
+
 I needed a library that would use the new Dropbox API v2.
 Not finding any, I decided to create this **module/document**, which uses the [Dropbox API v2 HTTP] .
 
@@ -23,7 +25,11 @@ www.facebook.com/astrovicApps
 
 ---
 
-# Get started
+# Get started [![gitTio](http://gitt.io/badge.svg)](http://gitt.io/component/ti.dropbox)
+Download the [latest release ZIP-file](https://github.com/Astrovic/TiDropboxAPIv2/releases) and consult the [Titanium Documentation](http://docs.appcelerator.com/titanium/latest/#!/guide/Using_a_Module) on how install it, or simply use the [gitTio CLI](http://gitt.io/cli):
+
+`$ gittio install ti.dropbox`
+
 ### Initialize module
 You need a [Dropbox App key], and a `redirect_uri` which must be configured on **Redirect URIs** field of your Dropbox App Settings, on *OAuth 2* section.
 ```js
@@ -260,9 +266,9 @@ function onErrorCallback(e) {
 
 Every contribution and pull requests are welcome! This repository is a **module/document**. So you can contribute both to the documentation, that to new versions of the module.
 
-##### Pull requests for new module version
+### Pull requests for new module version
 If you want to create a new module version, to edit or add new methods, **do not edit the [`modules/`](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules) folder directly! But you have to delete [`modules/commonjs`](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules/commonjs) folder.** You should edit the
-source files in [/lib](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/app/lib) folder instead.
+source files in [**`/lib`**](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/app/lib) folder instead.
 
 After making your changes, to create a new version of the module you have to follow the following steps:
 
@@ -270,7 +276,7 @@ After making your changes, to create a new version of the module you have to fol
 - Uses [Titaniumifier](https://github.com/smclab/titaniumifier) to generate the zip module, with the command:
 
     `$ titaniumifier --in . --out ./dist`
-- Import your new **ti.dropbox-commonjs-x.x.x.zip** module in the project. This will create the [`modules/commonjs`](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules/commonjs) folder you had removed earlier, with the new version of the module.
+- Import your new **ti.dropbox-commonjs-x.x.x.zip** module in the project. This will create the [**`modules/commonjs`**](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules/commonjs) folder you had removed earlier, with the new version of the module.
 
 All done :) Now you can send your pull request.
 
