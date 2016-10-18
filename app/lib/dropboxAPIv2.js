@@ -299,6 +299,30 @@ exports.dropboxAPIv2 = {
         }],
         "returnParameters": []
     },
+    "files/delete_batch": {
+        "uri": "https://api.dropboxapi.com/2/files/delete_batch",
+        "requiresAuthHeader": true,
+        "requiresReadableStream": false,
+        "endpointType": "RPC",
+        "testParams": {
+            "entries": [
+              {
+                "path": "/Homework/math/Prime_Numbers.txt"
+              }
+            ]
+        },
+        "parameters": [{
+            "name": "entries",
+            "type": "List of DeleteArg",
+            "desc": "",
+            "parameters": [{
+                "name": "path",
+                "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
+                "desc": "Path in the user's Dropbox to delete."
+              }],
+        }],
+        "returnParameters": []
+    },
     "files/download": {
         "uri": "https://content.dropboxapi.com/2/files/download",
         "requiresAuthHeader": true,

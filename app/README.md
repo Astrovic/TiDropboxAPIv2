@@ -12,6 +12,17 @@ Vittorio Sorbera, astrovicApps
 
 www.facebook.com/astrovicApps
 
+## Table of contents
+
+- [Get started](#get-started)
+- [Example of use](#example-of-use)
+- [Screenshots](#screenshots)
+- [Todos](#todos)
+- [Guidelines for pull requests](#guidelines-for-pull-requests)
+- [License](#license)
+
+---
+
 # Get started
 ### Initialize module
 You need a [Dropbox App key], and a `redirect_uri` which must be configured on **Redirect URIs** field of your Dropbox App Settings, on *OAuth 2* section.
@@ -245,6 +256,23 @@ function onErrorCallback(e) {
 
  - OAauth 2 code flow
 
+# Guidelines for pull requests
+
+Every contribution and pull requests are welcome! This repository is a **module/document**. So you can contribute both to the documentation, that to new versions of the module.
+
+##### Pull requests for new module version
+If you want to create a new module version, to edit or add new methods, **do not edit the [`modules/`](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules) folder directly! But you have to delete [`modules/commonjs`](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules/commonjs) folder.** You should edit the
+source files in [/lib](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/app/lib) folder instead.
+
+After making your changes, to create a new version of the module you have to follow the following steps:
+
+- Increase the version number in [package.json](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/package.json) file, in the root folder.
+- Uses [Titaniumifier](https://github.com/smclab/titaniumifier) to generate the zip module, with the command:
+
+    `$ titaniumifier --in . --out ./dist`
+- Import your new **ti.dropbox-commonjs-x.x.x.zip** module in the project. This will create the [`modules/commonjs`](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules/commonjs) folder you had removed earlier, with the new version of the module.
+
+All done :) Now you can send your pull request.
 
 License
 ----
