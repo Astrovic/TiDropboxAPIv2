@@ -1,6 +1,6 @@
 {
   "name": "ti.dropbox",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Titanium Appcelerator Javascript Dropbox API v2",
   "titaniumManifest": {
     "guid": "3e89fe63-2de2-415e-9777-a63ed2c102a1"
@@ -21,6 +21,9 @@
     "astrovicApps"
   ],
   "author": "Vittorio Sorbera, astrovicApps",
+  "contributors": [
+    "Sebastian Klaus <sebastian.klaus@gmail.com>"
+  ],
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Astrovic/TiDropboxAPIv2/issues"
