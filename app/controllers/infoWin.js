@@ -8,7 +8,9 @@ $.showTestParamsLbl.visible = method['testParams'] ? true : false;
 var animation = Ti.UI.createAnimation();
 animation.transform = Ti.UI.create2DMatrix();
 animation.duration = 500;
-$.containerView.animate(animation);
+setTimeout(function(){
+  $.containerView.animate(animation);
+},OS_IOS ? 10 : 500);
 
 
 var apiDocUrl = "https://www.dropbox.com/developers/documentation/http/documentation#"+args.selectedMethod.replace(/\//g,"-");

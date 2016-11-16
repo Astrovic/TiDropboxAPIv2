@@ -3795,6 +3795,7 @@ exports.dropboxAPIv2 = {
 }
 
 },{}],2:[function(require,module,exports){
+(function (setTimeout){
 /**
  *
  * this code was inspired by the work done by David Riccitelli
@@ -3820,6 +3821,8 @@ var TiDropbox = {};
 
     var window;
     var dropboxAPIv2 = require("../lib/dropboxAPIv2").dropboxAPIv2;
+    var OS_IOS = (Ti.Platform.osname != "android");
+    var OS_ANDROID = !OS_IOS;
 
     TiDropbox.init = function(clientId, redirectUri) {
         TiDropbox.clientId = clientId;
@@ -3852,9 +3855,9 @@ var TiDropbox = {};
                 message: JSON.stringify(e),
                 buttonNames: ['OK']
             }).show();
-            if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
+            //if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
               Ti.App.Properties.setString('DROPBOX_TOKENS',null);
-            };
+            //};
             revokeAuth_callback({
                 access_token: null,
                 success : false,
@@ -3863,7 +3866,7 @@ var TiDropbox = {};
         };
 
         // Remove cookies
-        if(Ti.Platform.osname != "android"){
+        if(OS_IOS){
       		var path = Titanium.Filesystem.applicationDataDirectory;
       		var searchKey = path.search('Documents');
       		path = path.substring(0, searchKey);
@@ -3876,8 +3879,6 @@ var TiDropbox = {};
       		};
       		f=null;
       	}else if(OS_ANDROID){
-      		Ti.API.debug("Ti.Network.removeSystemCookie('"+Alloy.Globals.gateway+"','/','"+Alloy.Globals.net.shibCookie+"')");
-      		Ti.Network.removeSystemCookie(Alloy.Globals.gateway,"/",Alloy.Globals.net.shibCookie);
       		Ti.Network.removeAllSystemCookies();
       	};
     };
@@ -3922,10 +3923,10 @@ var TiDropbox = {};
         Ti.API.debug("TiDropbox.ACCESS_TOKEN --> " + TiDropbox.ACCESS_TOKEN);
         try {
 
-            if (TiDropbox.xhr == null) {
+            //if (TiDropbox.xhr == null) {
                 TiDropbox.xhr = Titanium.Network.createHTTPClient();
                 TiDropbox.xhr.timeout = 10000;
-            }
+            //}
 
             TiDropbox.xhr.onerror = function(e) {
                 Ti.API.error("TiDropbox ERROR " + e.error);
@@ -3966,16 +3967,19 @@ var TiDropbox = {};
               switch(dropboxAPIv2[methodStr].endpointType){
                 case "RPC":
                   if(paramsObj){
-                    Ti.API.debug('TiDropbox.xhr.setRequestHeader("Content-Type", "application/json");');
-                    TiDropbox.xhr.setRequestHeader("Content-Type", "application/json");
+                    Ti.API.debug('TiDropbox.xhr.setRequestHeader("Content-Type",'+(OS_IOS ? '"application/json"' : '"text/plain; charset=dropbox-cors-hack"')+');');
+                    TiDropbox.xhr.setRequestHeader("Content-Type", OS_IOS ? "application/json" : "text/plain; charset=dropbox-cors-hack");
+                  }else if(OS_ANDROID){
+                    Ti.API.debug('TiDropbox.xhr.setRequestHeader("Content-Type", "");');
+                    TiDropbox.xhr.setRequestHeader("Content-Type", '');
                   };
                   break;
                 case "CONTENT":
                   Ti.API.debug('TiDropbox.xhr.setRequestHeader("Dropbox-API-Arg", '+JSON.stringify(paramsObj)+');');
                   TiDropbox.xhr.setRequestHeader("Dropbox-API-Arg", JSON.stringify(paramsObj));
                   if(methodStr.indexOf("upload")!=-1){
-                    Ti.API.debug('TiDropbox.xhr.setRequestHeader("Dropbox-API-Arg", "application/octet-stream");');
-                    TiDropbox.xhr.setRequestHeader("Content-Type", "application/octet-stream");
+                    Ti.API.debug('TiDropbox.xhr.setRequestHeader("Dropbox-API-Arg", '+(OS_IOS ? '"application/octet-stream"' : '"text/plain; charset=dropbox-cors-hack"')+');');
+                    TiDropbox.xhr.setRequestHeader("Content-Type", OS_IOS ? "application/octet-stream" : "text/plain; charset=dropbox-cors-hack");
                     if(dropboxAPIv2[methodStr].requiresReadableStream && fileBin){
                       Ti.API.debug('TiDropbox.xhr.send(fileBin);');
                       TiDropbox.xhr.send(fileBin);
@@ -3984,12 +3988,20 @@ var TiDropbox = {};
                   }else if(methodStr.indexOf("download")!=-1){
                     //Ti.API.debug('TiDropbox.xhr.setRequestHeader("Content-Type", "text/plain; charset=dropbox-cors-hack");');
                     //TiDropbox.xhr.setRequestHeader("Content-Type", "text/plain; charset=dropbox-cors-hack");
+                    if(OS_ANDROID){
+                      Ti.API.debug('TiDropbox.xhr.setRequestHeader("Content-Type", "");');
+                      TiDropbox.xhr.setRequestHeader("Content-Type", '');
+                    };
                     TiDropbox.xhr.send();
                     return;
                   }else if(methodStr.indexOf("files/get_")!=-1){
                     //Ti.API.debug('TiDropbox.xhr.setRequestHeader("Content-Type", "text/plain; charset=dropbox-cors-hack");');
                     //TiDropbox.xhr.setRequestHeader("Content-Type", "text/plain; charset=dropbox-cors-hack");
                     //TiDropbox.xhr.setRequestHeader("Content-Type", "application/octet-stream");
+                    if(OS_ANDROID){
+                      Ti.API.debug('TiDropbox.xhr.setRequestHeader("Content-Type", "");');
+                      TiDropbox.xhr.setRequestHeader("Content-Type", '');
+                    };
                     TiDropbox.xhr.send();
                     return;
                   };
@@ -3999,6 +4011,12 @@ var TiDropbox = {};
             if(paramsObj){
               Ti.API.debug('TiDropbox.xhr.send('+JSON.stringify(paramsObj)+');');
               TiDropbox.xhr.send(JSON.stringify(paramsObj));
+            }else if(OS_ANDROID){
+              var _paramsObj = {
+                body: null
+              };
+              Ti.API.debug('TiDropbox.xhr.send('+""+');');
+              TiDropbox.xhr.send();
             }else{
               Ti.API.debug('TiDropbox.xhr.send();');
               TiDropbox.xhr.send();
@@ -4018,11 +4036,12 @@ var TiDropbox = {};
      */
     function showAuthorizeUI(pUrl) {
         window = Ti.UI.createWindow({
-            top: (Ti.Platform.osname != "android") ? "20dp" : "0dp",
+            top: (OS_IOS) ? "20dp" : "0dp",
             //modal: true,
             //fullscreen: true,
             width: '100%',
-            backgroundColor: "rgb(255,255,255,0.5)"
+            backgroundColor: "rgb(255,255,255,0.5)",
+            navBarHidden : true
         });
         var transform = Ti.UI.create2DMatrix().scale(0);
         view = Ti.UI.createView({
@@ -4063,7 +4082,8 @@ var TiDropbox = {};
             bottom: "5dp",
             left: "5dp",
             url: pUrl,
-            autoDetect: [Ti.UI.AUTODETECT_NONE]
+            autoDetect: [Ti.UI.AUTODETECT_NONE],
+            ignoreSslError : true
         });
         Ti.API.debug('Setting:[' + Ti.UI.AUTODETECT_NONE + ']');
         webView.addEventListener('beforeload',
@@ -4094,7 +4114,9 @@ var TiDropbox = {};
         var animation = Ti.UI.createAnimation();
         animation.transform = Ti.UI.create2DMatrix();
         animation.duration = 500;
-        view.animate(animation);
+        setTimeout(function(){
+          view.animate(animation);
+        },OS_IOS ? 10 : 1000);
     };
 
 
@@ -4179,5 +4201,65 @@ var TiDropbox = {};
 
 exports.TiDropbox = TiDropbox;
 
-},{"../lib/dropboxAPIv2":1}]},{},[2])(2)
+}).call(this,require("--timers--").setTimeout)
+},{"--timers--":4,"../lib/dropboxAPIv2":1}],3:[function(require,module,exports){
+
+module.exports = (function () { return this; })();
+
+module.exports.location = {};
+
+},{}],4:[function(require,module,exports){
+(function (global){
+
+module.exports.clearInterval = clearInterval;
+module.exports.clearTimeout = clearTimeout;
+module.exports.setInterval = setInterval;
+module.exports.setTimeout = setTimeout;
+
+// See https://html.spec.whatwg.org/multipage/webappapis.html#dom-windowtimers-cleartimeout
+
+function clearInterval(intervalId) {
+  try {
+    return global.clearInterval(intervalId);
+  }
+  catch (e) {
+    // Do nothing
+    return undefined;
+  }
+}
+
+function clearTimeout(timeoutId) {
+  try {
+    return global.clearTimeout(timeoutId);
+  }
+  catch (e) {
+    // Do nothing
+    return undefined;
+  }
+}
+
+function setInterval(func, delay) {
+  var args = [];
+  for (var i = 2, l = arguments.length; i < l; ++i) {
+    args[ i - 2 ] = arguments[ i ];
+  }
+
+  return global.setInterval(function () {
+    func.apply(this, args);
+  }, +delay);
+}
+
+function setTimeout(func, delay) {
+  var args = [];
+  for (var i = 2, l = arguments.length; i < l; ++i) {
+    args[ i - 2 ] = arguments[ i ];
+  }
+
+  return global.setTimeout(function () {
+    func.apply(this, args);
+  }, +delay);
+}
+
+}).call(this,require("--global--"))
+},{"--global--":3}]},{},[2])(2)
 });

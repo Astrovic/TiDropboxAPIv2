@@ -101,7 +101,9 @@ function loginBtnClick(e) {
       }).show();
       checkToken();
     });
-    removeCookieiOS();
+    if(OS_IOS){
+      removeCookieiOS();
+    };
   };
 }
 
