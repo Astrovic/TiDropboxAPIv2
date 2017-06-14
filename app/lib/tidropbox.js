@@ -116,7 +116,7 @@ var TiDropbox = {};
     };
 
 
-    TiDropbox.callMethod = function(methodStr, paramsObj, fileBin, onSuccess_callback, onError_callback) {
+    TiDropbox.callMethod = function(methodStr, paramsObj, fileBin, onSuccess_callback, onError_callback, callMethodXhrObj_callback) {
 
         var urlEndpoint = dropboxAPIv2[methodStr].uri + "?reject_cors_preflight=true"; //&authorization=Bearer%20"+TiDropbox.ACCESS_TOKEN;
         //urlEndpoint = "https://api.dropboxapi.com/2/files/list_folder?authorization=Bearer%20"+TiDropbox.ACCESS_TOKEN+"&args=%7B%0A%20%20%22path%22%3A%20%22%22%2C%0A%20%20%22recursive%22%3A%20false%2C%0A%20%20%22include_media_info%22%3A%20false%2C%0A%20%20%22include_deleted%22%3A%20false%2C%0A%20%20%22include_has_explicit_shared_members%22%3A%20false%0A%7D&reject_cors_preflight=true";
@@ -148,15 +148,16 @@ var TiDropbox = {};
                 }
             };
 
-            TiDropbox.xhr.ondatastream = function(e) {
-                Ti.API.debug("TiDropbox ondatastream " + JSON.stringify(e));
-            };
-
             TiDropbox.xhr.onload = function(_xhr) {
                 Ti.API.debug("TiDropbox response: " + TiDropbox.xhr.responseText);
                 if (onSuccess_callback) {
                     onSuccess_callback(TiDropbox.xhr);
                 }
+            };
+
+            // return directly the current callMethod xhr object, so you can invoke all xhr methods you need: abort, onload, onsendstream, ecc..
+            if(callMethodXhrObj_callback){
+              callMethodXhrObj_callback(TiDropbox.xhr);
             };
 
             TiDropbox.xhr.open("POST", urlEndpoint);

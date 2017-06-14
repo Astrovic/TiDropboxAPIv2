@@ -64,13 +64,14 @@ TiDropbox.generateAuthUrl(function(e){
 ### API call
 After obtaining a valid token, you can call any method, simply use the function:
 ```js
-TiDropbox.callMethod (methodStr, paramsObj, fileBin, onSuccessCallback, onErrorCallback)
+TiDropbox.callMethod (methodStr, paramsObj, fileBin, onSuccessCallback, onErrorCallback, callMethodXhrObjCallback)
 ```
 - **methodStr** (*string*): represent API target. It contains Dropbox's namespace and method name. eg. `"files/upload"` or `"sharing/share_folder"` or more at [/lib/dropboxAPIv2.js]
 - **paramsObj** (*object*): parameters, depends on resource field
 - **fileBin** (*blob/null*): file to upload, depends on resource field
 - **onSuccessCallback** (*function*): callback on succes
 - **onErrorCallback** (*function*): callback on error
+- **callMethodXhrObjCallback** (*function*): return directly the *TiDropbox.xhr* object of the current *TiDropbox.callMethod*, so you can invoke all xhr methods you need: abort, onload, onsendstream, ecc..
 
 ### Revoke AccessToken
 Revoke the access token.
@@ -127,7 +128,7 @@ function login(){
           mute: false
         };
         var fileBin = Ti.Filesystem.getFile(Ti.Filesystem.resourcesDirectory, "a.txt").read();
-        TiDropbox.callMethod(methodStr, paramsObj, fileBin, onSuccessCallback, onErrorCallback)
+        TiDropbox.callMethod(methodStr, paramsObj, fileBin, onSuccessCallback, onErrorCallback, callMethodXhrObjCallback)
       }else{
         Titanium.UI.createAlertDialog({
             title: "AUTH PROBLEM",
@@ -160,6 +161,16 @@ function onErrorCallback(e) {
         Ti.App.Properties.setString('DROPBOX_TOKENS',null);
         login();
     };
+};
+
+function callMethodXhrObjCallback(currentCallMethodXhr){
+    currentCallMethodXhr.onsendstream = function(e) {
+			Ti.API.debug(JSON.stringify(e));
+			if(e.progress){
+        Ti.API.debug(JSON.stringify('Upload progress --> ' + (e.progress*100) + '%'));
+			}
+    };
+	};
 };
 ```
 
@@ -237,6 +248,16 @@ function onErrorCallback(e) {
         Ti.App.Properties.setString('DROPBOX_TOKENS',null);
         login();
     };
+};
+
+function callMethodXhrObjCallback(currentCallMethodXhr){
+    currentCallMethodXhr.ondatastream = function(e) {
+			Ti.API.debug(JSON.stringify(e));
+			if(e.progress){
+        Ti.API.debug(JSON.stringify('Download progress --> ' + (e.progress*100) + '%'));
+			}
+    };
+	};
 };
 ```
 
