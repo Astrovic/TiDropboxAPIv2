@@ -213,7 +213,7 @@ exports.dropboxAPIv2 = {
         "returnParameters": []
     },
     "files/copy": {
-        "uri": "https://api.dropboxapi.com/2/files/copy",
+        "uri": "https://api.dropboxapi.com/2/files/copy_v2",
         "requiresAuthHeader": true,
         "requiresReadableStream": false,
         "endpointType": "RPC",
@@ -221,7 +221,8 @@ exports.dropboxAPIv2 = {
             "from_path": "/Homework/math",
             "to_path": "/Homework/algebra",
             "allow_shared_folder": false,
-            "autorename": false
+            "autorename": false,
+            "allow_ownership_transfer": false
         },
         "parameters": [{
             "name": "from_path",
@@ -231,6 +232,18 @@ exports.dropboxAPIv2 = {
             "name": "to_path",
             "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
             "desc": "Path in the user's Dropbox that is the destination."
+        }, {
+            "name": "allow_shared_folder (deprecated)",
+            "type": "Boolean",
+            "desc": "Field is deprecated. This flag has no effect. The default for this field is False."
+        }, {
+            "name": "autorename",
+            "type": "Boolean",
+            "desc": "If there's a conflict, have the Dropbox server try to autorename the file to avoid the conflict. The default for this field is False."
+        }, {
+            "name": "allow_ownership_transfer",
+            "type": "Boolean",
+            "desc": "Allow moves by owner even if it would result in an ownership transfer for the content being moved. This does not apply to copies. The default for this field is False."
         }],
         "returnParameters": []
     },
@@ -270,7 +283,7 @@ exports.dropboxAPIv2 = {
         "returnParameters": []
     },
     "files/create_folder": {
-        "uri": "https://api.dropboxapi.com/2/files/create_folder",
+        "uri": "https://api.dropboxapi.com/2/files/create_folder_v2",
         "requiresAuthHeader": true,
         "requiresReadableStream": false,
         "endpointType": "RPC",
@@ -282,11 +295,15 @@ exports.dropboxAPIv2 = {
             "name": "path",
             "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
             "desc": "Path in the user's Dropbox to create."
+        }, {
+            "name": "autorename",
+            "type": "Boolean",
+            "desc": "If there's a conflict, have the Dropbox server try to autorename the folder to avoid the conflict. The default for this field is False."
         }],
         "returnParameters": []
     },
     "files/delete": {
-        "uri": "https://api.dropboxapi.com/2/files/delete",
+        "uri": "https://api.dropboxapi.com/2/files/delete_v2",
         "requiresAuthHeader": true,
         "requiresReadableStream": false,
         "endpointType": "RPC",
@@ -297,6 +314,10 @@ exports.dropboxAPIv2 = {
             "name": "path",
             "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
             "desc": "Path in the user's Dropbox to delete."
+        }, {
+            "name": "parent_rev",
+            "type": "String(min_length=9, pattern=\"[0-9a-f]+\")",
+            "desc": "Perform delete if given \"rev\" matches the existing file's latest \"rev\". This field does not support deleting a folder. This field is optional."
         }],
         "returnParameters": []
     },
@@ -306,11 +327,9 @@ exports.dropboxAPIv2 = {
         "requiresReadableStream": false,
         "endpointType": "RPC",
         "testParams": {
-            "entries": [
-              {
+            "entries": [{
                 "path": "/Homework/math/Prime_Numbers.txt"
-              }
-            ]
+            }]
         },
         "parameters": [{
             "name": "entries",
@@ -320,7 +339,7 @@ exports.dropboxAPIv2 = {
                 "name": "path",
                 "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
                 "desc": "Path in the user's Dropbox to delete."
-              }],
+            }],
         }],
         "returnParameters": []
     },
@@ -615,8 +634,30 @@ exports.dropboxAPIv2 = {
         }],
         "returnParameters": []
     },
+    "files/lock_file_batch": {
+        "uri": "https://api.dropboxapi.com/2/files/lock_file_batch",
+        "requiresAuthHeader": true,
+        "requiresReadableStream": false,
+        "endpointType": "RPC",
+        "testParams": {
+            "entries": [{
+                "path": "/John Doe/sample/test.pdf"
+            }]
+        },
+        "parameters": [{
+            "name": "entries",
+            "type": "List of (LockFileArg)",
+            "desc": "The path to the file you want to see the revisions of.",
+            "parameters": [{
+                "name": "path",
+                "type": "String(pattern=\"(/(.|[\r\n])*)|(ns:[0-9]+(/.*)?)|(id:.*)\")",
+                "desc": "Path in the user's Dropbox to a file."
+            }]
+        }],
+        "returnParameters": []
+    },
     "files/move": {
-        "uri": "https://api.dropboxapi.com/2/files/move",
+        "uri": "https://api.dropboxapi.com/2/files/move_v2",
         "requiresAuthHeader": true,
         "requiresReadableStream": false,
         "endpointType": "RPC",
@@ -624,16 +665,29 @@ exports.dropboxAPIv2 = {
             "from_path": "/Homework/math",
             "to_path": "/Homework/algebra",
             "allow_shared_folder": false,
-            "autorename": false
+            "autorename": false,
+            "allow_ownership_transfer": false
         },
         "parameters": [{
             "name": "from_path",
-            "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
+            "type": "String(pattern=\"(/(.|[\r\n])*)|(ns:[0-9]+(/.*)?)|(id:.*)\")",
             "desc": "Path in the user's Dropbox to be copied or moved."
         }, {
             "name": "to_path",
-            "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
+            "type": "String(pattern=\"(/(.|[\r\n])*)|(ns:[0-9]+(/.*)?)|(id:.*)\")",
             "desc": "Path in the user's Dropbox that is the destination."
+        }, {
+            "name": "allow_shared_folder (deprecated)",
+            "type": "Boolean",
+            "desc": "Field is deprecated. This flag has no effect. The default for this field is False."
+        }, {
+            "name": "autorename",
+            "type": "Boolean",
+            "desc": "If there's a conflict, have the Dropbox server try to autorename the file to avoid the conflict. The default for this field is False."
+        }, {
+            "name": "allow_ownership_transfer",
+            "type": "Boolean",
+            "desc": "Allow moves by owner even if it would result in an ownership transfer for the content being moved. This does not apply to copies. The default for this field is False."
         }],
         "returnParameters": []
     },
@@ -1017,62 +1071,164 @@ exports.dropboxAPIv2 = {
         "returnParameters": []
     },
     "files/search": {
-        "uri": "https://api.dropboxapi.com/2/files/search",
+        "uri": "https://api.dropboxapi.com/2/files/search_v2",
         "requiresAuthHeader": true,
         "requiresReadableStream": false,
         "endpointType": "RPC",
         "testParams": {
-            "path": "",
-            "query": "prime numbers",
-            "start": 0,
-            "max_results": 100,
-            "mode": "filename"
+            "query": "cat",
+            "options": {
+                "path": "/Folder",
+                "max_results": 20,
+                "file_status": "active",
+                "filename_only": false
+            },
+            "match_field_options": {
+                "include_highlights": false
+            }
         },
         "parameters": [{
-            "name": "path",
-            "type": "String(pattern=\"(/(.|[\\r\\n])*)?|(ns:[0-9]+(/.*)?)\")",
-            "desc": "The path in the user's Dropbox to search. Should probably be a folder."
-        }, {
             "name": "query",
-            "type": "String",
-            "desc": "The string to search for. The search string is split on spaces into multiple tokens. For file name searching, the last token is used for prefix matching (i.e. \"bat c\" matches \"bat cave\" but not \"batman car\")."
+            "type": "String(max_length=1000)",
+            "desc": "The string to search for. May match across multiple fields based on the request arguments."
         }, {
-            "name": "start",
-            "type": "UInt64",
-            "desc": "The starting index within the search results (used for paging). The default for this field is 0."
-        }, {
-            "name": "max_results",
-            "type": "UInt64",
-            "desc": "The maximum number of search results to return. The default for this field is 100."
-        }, {
-            "name": "mode",
-            "type": "SearchMode",
-            "desc": "The search mode (filename, filename_and_content, or deleted_filename). Note that searching file content is only available for Dropbox Business accounts. The default for this union is filename.",
+            "name": "options",
+            "type": "SearchOptions",
+            "desc": "Options for more targeted search results. This field is optional.",
             "parameters": [{
-                "name": "filename",
-                "type": "Void",
-                "desc": "Search file and folder names."
+                "name": "path",
+                "type": "String(pattern=\"(/(.|[\r\n])*)?|id:.*|(ns:[0-9]+(/.*)?)\")?",
+                "desc": " Scopes the search to a path in the user's Dropbox. Searches the entire Dropbox if not specified. This field is optional."
             }, {
-                "name": "filename_and_content",
-                "type": "Void",
-                "desc": "Search file and folder names as well as file contents."
+                "name": "max_results",
+                "type": "UInt64(min=1, max=1000)",
+                "desc": "The maximum number of search results to return. The default for this field is 100."
             }, {
-                "name": "deleted_filename",
-                "type": "Void",
-                "desc": "Search for deleted file and folder names."
+                "name": "order_by",
+                "type": "SearchOrderBy",
+                "desc": "Specified property of the order of search results. By default, results are sorted by relevance. This field is optional.",
+                "parameters": [{
+                    "name": "relevance",
+                    "type": "Void",
+                    "desc": ""
+                }, {
+                    "name": "last_modified_time",
+                    "type": "Void",
+                    "desc": ""
+                }]
+            }, {
+                "name": "file_status",
+                "type": "FileStatus",
+                "desc": "Restricts search to the given file status. The default for this union is active.",
+                "parameters": [{
+                    "name": "active",
+                    "type": "Void",
+                    "desc": ""
+                }, {
+                    "name": "deleted",
+                    "type": "Void",
+                    "desc": ""
+                }]
+            }, {
+                "name": "filename_only",
+                "type": "Boolean",
+                "desc": "Restricts search to only match on filenames. The default for this field is False."
+            }, {
+                "name": "file_extensions",
+                "type": "List of (String)",
+                "desc": "Restricts search to only the extensions specified. Only supported for active file search. This field is optional."
+            }, {
+                "name": "file_categories ",
+                "type": "List of (FileCategory)",
+                "desc": " Restricts search to only the file categories specified. Only supported for active file search. This field is optional.",
+                "parameters": [{
+                    "name": "image",
+                    "type": "Void",
+                    "desc": "jpg, png, gif, and more."
+                }, {
+                    "name": "document",
+                    "type": "Void",
+                    "desc": "doc, docx, txt, and more."
+                }, {
+                    "name": "pdf",
+                    "type": "Void",
+                    "desc": "pdf"
+                }, {
+                    "name": "spreadsheet",
+                    "type": "Void",
+                    "desc": "xlsx, xls, csv, and more."
+                }, {
+                    "name": "presentation",
+                    "type": "Void",
+                    "desc": "ppt, pptx, key, and more."
+                }, {
+                    "name": "audio",
+                    "type": "Void",
+                    "desc": "mp3, wav, mid, and more."
+                }, {
+                    "name": "video",
+                    "type": "Void",
+                    "desc": "mov, wmv, mp4, and more."
+                }, {
+                    "name": "folder",
+                    "type": "Void",
+                    "desc": "dropbox folder."
+                }, {
+                    "name": "paper",
+                    "type": "Void",
+                    "desc": "dropbox paper doc."
+                }, {
+                    "name": "others",
+                    "type": "Void",
+                    "desc": "any file not in one of the categories above."
+                }]
             }]
         }, {
-            "name": "filename",
-            "type": "Void",
-            "desc": "Search file and folder names."
-        }, {
-            "name": "filename_and_content",
-            "type": "Void",
-            "desc": "Search file and folder names as well as file contents."
-        }, {
-            "name": "deleted_filename",
-            "type": "Void",
-            "desc": "Search for deleted file and folder names."
+            "name": "match_field_options ",
+            "type": "SearchMatchFieldOptions",
+            "desc": "Options for search results match fields. This field is optional.",
+            "parameters": [{
+                "name": "include_highlights",
+                "type": "Boolean",
+                "desc": "Whether to include highlight span from file title. The default for this field is False."
+            }]
+        }],
+        "returnParameters": []
+    },
+    "files/search/continue": {
+        "uri": "https://api.dropboxapi.com/2/files/search/continue_v2",
+        "requiresAuthHeader": true,
+        "requiresReadableStream": false,
+        "endpointType": "RPC",
+        "testParams": {
+            "cursor": "ZtkX9_EHj3x7PMkVuFIhwKYXEpwpLwyxp9vMKomUhllil9q7eWiAu"
+        },
+        "parameters": [{
+            "name": "cursor",
+            "type": "String(min_length=1)",
+            "desc": "The cursor returned by your last call to search:2. Used to fetch the next page of results."
+        }],
+        "returnParameters": []
+    },
+    "files/unlock_file_batch": {
+        "uri": "https://api.dropboxapi.com/2/files/unlock_file_batch",
+        "requiresAuthHeader": true,
+        "requiresReadableStream": false,
+        "endpointType": "RPC",
+        "testParams": {
+            "entries": [{
+                "path": "/John Doe/sample/test.pdf"
+            }]
+        },
+        "parameters": [{
+            "name": "entries",
+            "type": "List of (UnlockFileArg)",
+            "desc": "The path to the file you want to see the revisions of.",
+            "parameters": [{
+                "name": "path",
+                "type": "String(pattern=\"(/(.|[\r\n])*)|(ns:[0-9]+(/.*)?)|(id:.*)\")",
+                "desc": "Path in the user's Dropbox to a file."
+            }]
         }],
         "returnParameters": []
     },
@@ -1174,20 +1330,12 @@ exports.dropboxAPIv2 = {
             "parameters": [{
                 "name": "session_id",
                 "type": "String",
-                "desc": "The upload session ID (returned by  )."
+                "desc": "The upload session ID (returned by upload_session/start)."
             }, {
                 "name": "offset",
                 "type": "UInt64",
-                "desc": "The amount of data that has been uploaded so far. We use this to make sure upload data isn't lost or duplicated in the event of a network error."
+                "desc": "Offset in bytes at which data should be appended. We use this to make sure upload data isn't lost or duplicated in the event of a network error."
             }]
-        }, {
-            "name": "session_id",
-            "type": "String",
-            "desc": "The upload session ID (returned by  )."
-        }, {
-            "name": "offset",
-            "type": "UInt64",
-            "desc": "The amount of data that has been uploaded so far. We use this to make sure upload data isn't lost or duplicated in the event of a network error."
         }, {
             "name": "close",
             "type": "Boolean",
@@ -1375,7 +1523,7 @@ exports.dropboxAPIv2 = {
                 "parameters": [{
                     "name": "session_id",
                     "type": "String",
-                    "desc": "The upload session ID (returned by  )."
+                    "desc": " The upload session ID (returned by upload_session/start)."
                 }, {
                     "name": "offset",
                     "type": "UInt64",
@@ -1384,7 +1532,7 @@ exports.dropboxAPIv2 = {
             }, {
                 "name": "session_id",
                 "type": "String",
-                "desc": "The upload session ID (returned by  )."
+                "desc": " The upload session ID (returned by upload_session/start)."
             }, {
                 "name": "offset",
                 "type": "UInt64",

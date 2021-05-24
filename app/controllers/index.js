@@ -109,7 +109,7 @@ function loginBtnClick(e) {
 
 function removeCookieiOS(){
   // To remove cookies on iOS use tiWebview module
-  var TiWebview = require('com.mobmaxime.tiWebview');
+  var TiWebview = require('com.mobmaxime.TiWebview');
   var url = "https://www.dropbox.com";
   var wv = Ti.UI.createWebView({
       url: url,

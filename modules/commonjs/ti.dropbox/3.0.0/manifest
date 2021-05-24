@@ -1,8 +1,8 @@
-version: 1.3.0
+version: 2.0.0
 description: Titanium Appcelerator Javascript Dropbox API v2
 author: Vittorio Sorbera, astrovicApps
 license: ISC
-copyright: Copyright © 2017 Vittorio Sorbera, astrovicApps
+copyright: Copyright © 2018 Vittorio Sorbera, astrovicApps
 name: ti.dropbox
 moduleid: ti.dropbox
 guid: 3e89fe63-2de2-415e-9777-a63ed2c102a1

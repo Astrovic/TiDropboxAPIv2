@@ -1,0 +1,9 @@
+v. 3.0.0
+ - files/lock_file_batch
+ - files/search updated to v2;
+ - files/search/continue 
+ - files/unlock_file_batch
+ - files/copy updated to v2
+ - files/create_folder updated to v2
+ - files/delete updated to v2
+ - files/move updated to v2
