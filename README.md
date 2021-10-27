@@ -297,6 +297,8 @@ After making your changes, to create a new version of the module you have to fol
 - Uses [Titaniumifier](https://github.com/smclab/titaniumifier) to generate the zip module, with the command:
 
     `$ titaniumifier --in . --out ./dist`
+
+   ⚠️ **Titaniumifier** requires **node 8**. It does not work correctly with node version > 8.
 - Import your new **ti.dropbox-commonjs-x.x.x.zip** module in the project. This will create the [**`modules/commonjs`**](https://github.com/Astrovic/TiDropboxAPIv2/tree/master/modules/commonjs) folder you had removed earlier, with the new version of the module.
 
 All done :) Now you can send your pull request.

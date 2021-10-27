@@ -360,9 +360,8 @@ var TiDropbox = {};
         Titanium.API.debug(e);
 
 
-        if (e.url.indexOf('#access_token') != -1) {
-            var token = e.url.split("=")[1];
-            token = token.substring(0, token.indexOf("&"));
+        if (e.url.indexOf('access_token') != -1) {
+            var token = e.url.match(/[?&]access_token=([^&]*)/)[1];
             TiDropbox.ACCESS_TOKEN = token;
             Ti.App.Properties.setString('DROPBOX_TOKENS',TiDropbox.ACCESS_TOKEN);
             Ti.API.debug('tidropbox_token: ' + token);
@@ -386,7 +385,7 @@ var TiDropbox = {};
                 });
             }
             destroyAuthorizeUI();
-        } else if (e.url.indexOf('#error=access_denied') != -1) {
+        } else if (e.url.indexOf('error=access_denied') != -1) {
             Ti.API.debug('tidropbox_access_denied, you need a new token');
             if (TiDropbox.auth_callback != undefined) {
                 TiDropbox.auth_callback({
@@ -397,7 +396,6 @@ var TiDropbox = {};
             }
             destroyAuthorizeUI();
         }
-
     };
 
 })();

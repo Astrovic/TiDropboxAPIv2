@@ -3,7 +3,7 @@
   xmlns:ti="http://ti.appcelerator.org">
   <id>com.astrovicApps.tidropbox</id>
   <name>TiDropbox</name>
-  <version>3.0</version>
+  <version>4.0</version>
   <publisher>astrovicApps</publisher>
   <url>http://www.facebook.com/AstrovicApps</url>
   <description/>
@@ -57,7 +57,7 @@
     <theme>default</theme>
   </mobileweb>
   <modules>
-    <module platform="commonjs">ti.dropbox</module>
+    <module platform="commonjs" version="4.0.0">ti.dropbox</module>
     <module platform="iphone" version="0.2">com.mobmaxime.TiWebview</module>
   </modules>
   <deployment-targets>

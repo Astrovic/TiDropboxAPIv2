@@ -1,6 +1,6 @@
 {
   "name": "ti.dropbox",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Titanium Appcelerator Javascript Dropbox API v2",
   "titaniumManifest": {
     "guid": "3e89fe63-2de2-415e-9777-a63ed2c102a1"
@@ -25,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/Astrovic/TiDropboxAPIv2/issues"
   },
-  "homepage": "https://github.com/Astrovic/TiDropboxAPIv2#readme"
+  "homepage": "https://github.com/Astrovic/TiDropboxAPIv2#readme",
+  "dependencies": {
+    "titaniumifier": "^1.5.1"
+  }
 }

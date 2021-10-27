@@ -1,5 +1,5 @@
 var TiDropbox = require("ti.dropbox").TiDropbox;
-TiDropbox.init('e9tribefg77q4wg'/*<YOUR APP KEY HERE>*/, 'https://www.dropbox.com/'/*<YOUR redirect_uri HERE>*/);
+TiDropbox.init('e9tribefg77q4wg'/*<YOUR APP KEY HERE>*/, 'https://astrovicapps.com/'/*<YOUR redirect_uri HERE>*/);
 
 var dropboxAPIv2 = require("dropboxAPIv2").dropboxAPIv2;
 var selectedMethod = "";
@@ -57,16 +57,16 @@ for(var methodStr in dropboxAPIv2){
       apiList.push(apiRow);
     };
 };
-$.apiListTV.setData(apiList);
+$.apiListTV.data = apiList;
 
 function checkToken(){
   if(Ti.App.Properties.getString('DROPBOX_TOKENS',null)){
     $.loginBtn.logged = true;
-    $.loginBtn.setTitle("Dropbox Logout");
+    $.loginBtn.title = "Dropbox Logout";
     $.apiListTV.show();
   }else{
     $.loginBtn.logged = false;
-    $.loginBtn.setTitle("Dropbox Login");
+    $.loginBtntitle = "Dropbox Login";
     $.apiListTV.hide();
   };
   $.activityBgView.hide();

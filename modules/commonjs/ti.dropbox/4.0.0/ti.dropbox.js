@@ -1,4 +1,63 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.ti || (g.ti = {})).dropbox = f()}})(function(){var define,module,exports;return (function e(t,n,r){function o(i,u){if(!n[i]){if(!t[i]){var a=typeof require=="function"&&require;if(!u&&a)return a.length===2?a(i,!0):a(i);if(s&&s.length===2)return s(i,!0);if(s)return s(i);var f=new Error("Cannot find module '"+i+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[i]={exports:{}};t[i][0].call(l.exports,function(e){var n=t[i][1][e];return o(n?n:e)},l,l.exports,e,t,n,r)}return n[i].exports}var i=Array.prototype.slice;Function.prototype.bind||Object.defineProperty(Function.prototype,"bind",{enumerable:!1,configurable:!0,writable:!0,value:function(e){function r(){return t.apply(this instanceof r&&e?this:e,n.concat(i.call(arguments)))}if(typeof this!="function")throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");var t=this,n=i.call(arguments,1);return r.prototype=Object.create(t.prototype),r.prototype.contructor=r,r}});var s=typeof require=="function"&&require;for(var u=0;u<r.length;u++)o(r[u]);return o})({1:[function(require,module,exports){
+
+module.exports = (function () { return this; })();
+
+module.exports.location = {};
+
+},{}],2:[function(require,module,exports){
+(function (global){
+
+module.exports.clearInterval = clearInterval;
+module.exports.clearTimeout = clearTimeout;
+module.exports.setInterval = setInterval;
+module.exports.setTimeout = setTimeout;
+
+// See https://html.spec.whatwg.org/multipage/webappapis.html#dom-windowtimers-cleartimeout
+
+function clearInterval(intervalId) {
+  try {
+    return global.clearInterval(intervalId);
+  }
+  catch (e) {
+    // Do nothing
+    return undefined;
+  }
+}
+
+function clearTimeout(timeoutId) {
+  try {
+    return global.clearTimeout(timeoutId);
+  }
+  catch (e) {
+    // Do nothing
+    return undefined;
+  }
+}
+
+function setInterval(func, delay) {
+  var args = [];
+  for (var i = 2, l = arguments.length; i < l; ++i) {
+    args[ i - 2 ] = arguments[ i ];
+  }
+
+  return global.setInterval(function () {
+    func.apply(this, args);
+  }, +delay);
+}
+
+function setTimeout(func, delay) {
+  var args = [];
+  for (var i = 2, l = arguments.length; i < l; ++i) {
+    args[ i - 2 ] = arguments[ i ];
+  }
+
+  return global.setTimeout(function () {
+    func.apply(this, args);
+  }, +delay);
+}
+
+}).call(this,require("--global--"))
+},{"--global--":1}],3:[function(require,module,exports){
 /**
  * this code was inspired by the work done by Adam Płócieniak
  * available at https://github.com/adasq/dropbox-v2-api/blob/master/dist/api.json
@@ -327,9 +386,11 @@ exports.dropboxAPIv2 = {
         "requiresReadableStream": false,
         "endpointType": "RPC",
         "testParams": {
-            "entries": [{
+            "entries": [
+              {
                 "path": "/Homework/math/Prime_Numbers.txt"
-            }]
+              }
+            ]
         },
         "parameters": [{
             "name": "entries",
@@ -339,7 +400,7 @@ exports.dropboxAPIv2 = {
                 "name": "path",
                 "type": "String(pattern=\"(/(.|[\\r\\n])*)|(ns:[0-9]+(/.*)?)\")",
                 "desc": "Path in the user's Dropbox to delete."
-            }],
+              }],
         }],
         "returnParameters": []
     },
@@ -3942,7 +4003,7 @@ exports.dropboxAPIv2 = {
     }
 }
 
-},{}],2:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function (setTimeout){
 /**
  *
@@ -4306,9 +4367,8 @@ var TiDropbox = {};
         Titanium.API.debug(e);
 
 
-        if (e.url.indexOf('#access_token') != -1) {
-            var token = e.url.split("=")[1];
-            token = token.substring(0, token.indexOf("&"));
+        if (e.url.indexOf('access_token') != -1) {
+            var token = e.url.match(/[?&]access_token=([^&]*)/)[1];
             TiDropbox.ACCESS_TOKEN = token;
             Ti.App.Properties.setString('DROPBOX_TOKENS',TiDropbox.ACCESS_TOKEN);
             Ti.API.debug('tidropbox_token: ' + token);
@@ -4332,7 +4392,7 @@ var TiDropbox = {};
                 });
             }
             destroyAuthorizeUI();
-        } else if (e.url.indexOf('#error=access_denied') != -1) {
+        } else if (e.url.indexOf('error=access_denied') != -1) {
             Ti.API.debug('tidropbox_access_denied, you need a new token');
             if (TiDropbox.auth_callback != undefined) {
                 TiDropbox.auth_callback({
@@ -4343,7 +4403,6 @@ var TiDropbox = {};
             }
             destroyAuthorizeUI();
         }
-
     };
 
 })();
@@ -4351,64 +4410,5 @@ var TiDropbox = {};
 exports.TiDropbox = TiDropbox;
 
 }).call(this,require("--timers--").setTimeout)
-},{"--timers--":4,"../lib/dropboxAPIv2":1}],3:[function(require,module,exports){
-
-module.exports = (function () { return this; })();
-
-module.exports.location = {};
-
-},{}],4:[function(require,module,exports){
-(function (global){
-
-module.exports.clearInterval = clearInterval;
-module.exports.clearTimeout = clearTimeout;
-module.exports.setInterval = setInterval;
-module.exports.setTimeout = setTimeout;
-
-// See https://html.spec.whatwg.org/multipage/webappapis.html#dom-windowtimers-cleartimeout
-
-function clearInterval(intervalId) {
-  try {
-    return global.clearInterval(intervalId);
-  }
-  catch (e) {
-    // Do nothing
-    return undefined;
-  }
-}
-
-function clearTimeout(timeoutId) {
-  try {
-    return global.clearTimeout(timeoutId);
-  }
-  catch (e) {
-    // Do nothing
-    return undefined;
-  }
-}
-
-function setInterval(func, delay) {
-  var args = [];
-  for (var i = 2, l = arguments.length; i < l; ++i) {
-    args[ i - 2 ] = arguments[ i ];
-  }
-
-  return global.setInterval(function () {
-    func.apply(this, args);
-  }, +delay);
-}
-
-function setTimeout(func, delay) {
-  var args = [];
-  for (var i = 2, l = arguments.length; i < l; ++i) {
-    args[ i - 2 ] = arguments[ i ];
-  }
-
-  return global.setTimeout(function () {
-    func.apply(this, args);
-  }, +delay);
-}
-
-}).call(this,require("--global--"))
-},{"--global--":3}]},{},[2])(2)
+},{"--timers--":2,"../lib/dropboxAPIv2":3}]},{},[4])(4)
 });
