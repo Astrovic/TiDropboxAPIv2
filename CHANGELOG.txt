@@ -1,3 +1,5 @@
+v. 4.1.0
+ - New method to retrieve access_token
 v. 4.0.0
  - New method to retrieve access_token
 v. 3.0.0

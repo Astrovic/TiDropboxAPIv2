@@ -38,11 +38,11 @@ var TiDropbox = {};
         TiDropbox.callMethod("auth/token/revoke", null, null, onSuccess_self, onFailed_self);
 
         function onSuccess_self() {
-            Titanium.UI.createAlertDialog({
+            /*Titanium.UI.createAlertDialog({
                 title: "auth/token/revoke",
                 message: "LOGOUT SUCCESS",
                 buttonNames: ['OK']
-            }).show();
+            }).show();*/
             Ti.App.Properties.setString('DROPBOX_TOKENS',null);
             revokeAuth_callback({
                 access_token: null,
@@ -52,11 +52,11 @@ var TiDropbox = {};
         };
 
         function onFailed_self(e) {
-            Titanium.UI.createAlertDialog({
+            /*Titanium.UI.createAlertDialog({
                 title: "auth/token/revoke",
                 message: JSON.stringify(e),
                 buttonNames: ['OK']
-            }).show();
+            }).show();*/
             //if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
               Ti.App.Properties.setString('DROPBOX_TOKENS',null);
             //};
@@ -246,7 +246,7 @@ var TiDropbox = {};
             backgroundColor: "rgb(255,255,255,0.5)",
             navBarHidden : true
         });
-        var transform = Ti.UI.create2DMatrix().scale(0);
+        var transform = Ti.UI.createMatrix2D().scale(0);
         view = Ti.UI.createView({
             top: "50dp",
             left: "5dp",
@@ -315,7 +315,7 @@ var TiDropbox = {};
         window.add(view);
 
         var animation = Ti.UI.createAnimation();
-        animation.transform = Ti.UI.create2DMatrix();
+        animation.transform = Ti.UI.createMatrix2D();
         animation.duration = 500;
         setTimeout(function(){
           view.animate(animation);
@@ -361,7 +361,16 @@ var TiDropbox = {};
 
 
         if (e.url.indexOf('access_token') != -1) {
-            var token = e.url.match(/[?&]access_token=([^&]*)/)[1];
+            var token;
+            try {
+                token = e.url.match(/[?&]access_token=([^&]*)/)[1];
+            } catch (error) {
+                try {
+                    token = e.url.match(/[?#]access_token=([^&]*)/)[1];
+                } catch (error) {
+                    token = e.url.match(/access_token=([^&]*)/)[1];
+                }
+            }
             TiDropbox.ACCESS_TOKEN = token;
             Ti.App.Properties.setString('DROPBOX_TOKENS',TiDropbox.ACCESS_TOKEN);
             Ti.API.debug('tidropbox_token: ' + token);

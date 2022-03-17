@@ -1,12 +1,12 @@
 var args = arguments[0] || {};
 var method = args.method || {};
 var isTablet = $.containerView.isTablet;
-$.containerView.transform = Ti.UI.create2DMatrix().scale(0);
+$.containerView.transform = Ti.UI.createMatrix2D().scale(0);
 $.testParamsLbl.text = method['testParams'];
 $.showTestParamsLbl.visible = method['testParams'] ? true : false;
 
 var animation = Ti.UI.createAnimation();
-animation.transform = Ti.UI.create2DMatrix();
+animation.transform = Ti.UI.createMatrix2D();
 animation.duration = 500;
 setTimeout(function(){
   $.containerView.animate(animation);
