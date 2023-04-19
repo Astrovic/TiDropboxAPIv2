@@ -129,10 +129,10 @@ iOS `public.mime-type` key string and Android `android:scheme` value must be the
 ```
 
 ## Methods
-- [init(parameters)](#init))
-- [generateAuthUrl(callback)](#generateauthurl)
-- [callMethod(parameters)](#callmethod)
-- [revokeAccessToken(callback)](#revokeaccesstoken)
+- [init(parameters)](#--init)
+- [generateAuthUrl(callback)](#--generateauthurl)
+- [callMethod(parameters)](#--callmethod)
+- [revokeAccessToken(callback)](#--revokeaccesstoken)
 
 ###  - init
 **`TiDropbox.init(parameters)`**
