@@ -36,7 +36,9 @@ Download the [latest release ZIP-file](https://github.com/Astrovic/TiDropboxAPIv
 - Dropbox requires a redirect URI set to the Dropbox Console App, in order to get a valid token. This url is the same one you will use in the `redirectUri` parameter of the `TiDropbox.init()` method.
 In this project I use the redirect URI https://astrovicapps.com/_apptest/tidropbox_cb.html. You will have to create your own and host it somewhere.
 You can use the contents of my **tidropbox_cb.html** file. You just need to replace `const scheme = "dropbox";` with the one used in you **tiapp.xml**:
+
 ```html
+<!-- tidropbox_cb.html file content -->
 <html>
     <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
@@ -80,11 +82,11 @@ You can use the contents of my **tidropbox_cb.html** file. You just need to repl
 
 ## tiapp.xml
 The login flow to obtain the token requires the use of the system browser. In order to get back to the app, you need to add an activity to your android manifest, which will be used by the **ti.deeply** module, and a public.mime-type string on iOS.
-iOS `public.mime-type` key string and Android `android:scheme` value must be the ones you use in the **tidropbox_cb.html** redirect URI file:
+iOS `public.mime-type` key string,Android `android:scheme` value and `app_mime_scheme`value must be the ones you use in the **tidropbox_cb.html** redirect URI file:
 
-|tidropbox_cb.html|tiapp.xml iOS|tiapp.xml Android|
-|--|--|--|
-|`scheme`|`public.mime-type` key string|`android:scheme` value|
+|tidropbox_cb.html|tiapp.xml iOS|tiapp.xml Android|TiDropbox.init()|
+|--|--|--|--|
+|`scheme` value|`public.mime-type` key string|`android:scheme` value|`app_mime_scheme` value|
 
 ```xml
 <ios>
