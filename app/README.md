@@ -1,6 +1,6 @@
-# Titanium Appcelerator Javascript Dropbox API v2
 
-[![gitTio](http://img.shields.io/badge/on-gittio-00B4CC.svg)](http://gitt.io/component/ti.dropbox)
+
+# Titanium Appcelerator Javascript Dropbox API v2
 
 I needed a library that would use the new Dropbox API v2.
 Not finding any, I decided to create this **module/document**, which uses the [Dropbox API v2 HTTP] .
@@ -10,13 +10,15 @@ For each API method, it is available the complete documentation and a test. You 
 
 Enjoy
 
-Vittorio Sorbera, astrovicApps
-
-www.facebook.com/astrovicApps
+Vittorio Sorbera, AstrovicApps
+http://www.astrovicapps.com
 
 ## Table of contents
 
-- [Get started](#get-started)
+- [Download](#download)
+- [Requirements](#requirements)
+- [tiapp.xml](#tiapp.xml)
+- [Methods](#methods)
 - [Example of use](#example-of-use)
 - [Screenshots](#screenshots)
 - [Todos](#todos)
@@ -25,23 +27,143 @@ www.facebook.com/astrovicApps
 
 ---
 
-# Get started [![gitTio](http://gitt.io/badge.svg)](http://gitt.io/component/ti.dropbox)
-Download the [latest release ZIP-file](https://github.com/Astrovic/TiDropboxAPIv2/releases) and consult the [Titanium Documentation](http://docs.appcelerator.com/titanium/latest/#!/guide/Using_a_Module) on how install it, or simply use the [gitTio CLI](http://gitt.io/cli):
+## Download
+Download the [latest release ZIP-file](https://github.com/Astrovic/TiDropboxAPIv2/releases) and consult the [Titanium Documentation](https://titaniumsdk.com/guide/Titanium_SDK/Titanium_SDK_How-tos/Using_Modules/Using_a_Module.html) on how install it.
 
-`$ gittio install ti.dropbox`
+## Requirements
+-  The  `ti.webdialog`  module
+-  The  [`ti.deeply`](https://github.com/miniman42/ti.deeply)  module (Android only)
+- Dropbox requires a redirect URI set to the Dropbox Console App, in order to get a valid token. This url is the same one you will use in the `redirectUri` parameter of the `TiDropbox.init()` method.
+In this project I use the redirect URI https://astrovicapps.com/_apptest/tidropbox_cb.html. You will have to create your own and host it somewhere.
+You can use the contents of my **tidropbox_cb.html** file. You just need to replace `const scheme = "dropbox";` with the one used in you **tiapp.xml**:
+```html
+<html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <script type="text/javascript">
+        const isAndroid = /(android)/i.test(navigator.userAgent);
+        const isHuawei = /(huawei)/i.test(navigator.userAgent);
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const scheme = "tidropbox"; // <-- Must be the one used in the tiapp.xml public.mime-type string and android:scheme value
+        const host = "dropbox_token";
+        var url = scheme + "://" + host +"?" + (code || window.location.hash);
+        var intent = "intent://"+host+"?"+ (code || window.location.hash) + "#Intent;scheme="+scheme+";action=android.intent.action.VIEW;end";
+        console.log(window.location);
+        console.log("isAndroid: --> ", isAndroid);
+        console.log("isHuawei: --> ", isHuawei);
+        setTimeout(function(){
+            document.getElementById("token").href = isAndroid || isHuawei ? intent : url;
+            //document.getElementById("write_token").innerText = isAndroid ? intent : url;
+            if (isHuawei) {
+                window.location = intent;
+            } else {
+                window.location = isAndroid ? intent : url;
+            }
+            window.close();
+        },100);
+        function closeWindow() {
+            window.close();
+        }
+    </script>
+  </head>
+  <body>
+    <div style="text-align:center;">
+        <a id="token" href="" onclick="closeWindow()">
+            <button>OPEN APP</button>
+        </a>
+        <!--p id="write_token"></p-->
+    </div>
+  </body>
+</html>
+```
 
-### Initialize module
-You need a [Dropbox App key], and a `redirect_uri` which must be configured on **Redirect URIs** field of your Dropbox App Settings, on *OAuth 2* section.
+## tiapp.xml
+The login flow to obtain the token requires the use of the system browser. In order to get back to the app, you need to add an activity to your android manifest, which will be used by the **ti.deeply** module, and a public.mime-type string on iOS.
+iOS `public.mime-type` key string and Android `android:scheme` value must be the ones you use in the **tidropbox_cb.html** redirect URI file:
+
+|tidropbox_cb.html|tiapp.xml iOS|tiapp.xml Android|
+|--|--|--|
+|`scheme`|`public.mime-type` key string|`android:scheme` value|
+
+```xml
+<ios>
+  <enable-launch-screen-storyboard>true</enable-launch-screen-storyboard>
+  <use-app-thinning>true</use-app-thinning>
+  <plist>      
+    <key>UTExportedTypeDeclarations</key>
+      <array>
+        <dict>      			
+          <key>UTTypeTagSpecification</key>
+          <dict>
+            <key>public.mime-type</key>
+            <string>tidropbox</string>
+          </dict>
+        </dict>
+      </array>
+  </plist>
+</ios>
+<android xmlns:android="http://schemas.android.com/apk/res/android">
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android" >
+    <application>
+      <!-- ti.dropbox required >>> -->
+      <activity android:name="ti.deeply.DeepLinkHandlerActivity" android:exported="true" 
+                android:noHistory="true" android:excludeFromRecents="true" android:launchMode="singleTask">
+        <intent-filter>
+          <action android:name="android.intent.action.VIEW"/>
+          <category android:name="android.intent.category.DEFAULT"/>
+          <category android:name="android.intent.category.BROWSABLE"/>
+          <data android:scheme="tidropbox" android:host="dropbox_token" />
+        </intent-filter>      
+      </activity>
+      <!-- <<< ti.dropbox required -->
+    </application>
+  </manifest>
+</android>
+
+<modules>
+  <module platform="commonjs">ti.dropbox</module>
+  <module>ti.webdialog</module>
+  <module platform="android" version="3.0.0">ti.deeply</module>
+</modules>
+```
+
+## Methods
+- [init(parameters)](#init))
+- [generateAuthUrl(callback)](#generateauthurl)
+- [callMethod(parameters)](#callmethod)
+- [revokeAccessToken(callback)](#revokeaccesstoken)
+
+###  - init
+**`TiDropbox.init(parameters)`**
+|Parameters|Type|Required|Description |
+|--|--|--|--|
+| **APP_KEY** | *String* | ✅ | App key in Dropbox Console App|
+| **APP_SECRET** | *String* | ✅ | App secret in Dropbox Console App|
+| **redirectUri** | *String* | ✅ | One of your OAuth2 Redirect URIs set to Dropbox Console App |
+| **response_type** | *String* | ✅ | `code` or `token`. Token flow expires after 4 hours |
+| **app_mime_scheme** | *String* | ✅ | App mime scheme set to tiapp.xml (on Android) and used inside your `redirectUri` page to be able to get back to the app after login|
+
+You need a [Dropbox App key], and a `redirectUri` which must be configured on **Redirect URIs** field of your Dropbox App Settings, on *OAuth 2* section.
 ```js
 var TiDropbox = require("ti.dropbox").TiDropbox;
-TiDropbox.init('<YOUR APP KEY HERE>', '<YOUR redirect_uri HERE>');
+TiDropbox.init({
+    APP_KEY: 'e9tribefg77q4wg', /*<YOUR APP KEY HERE>*/
+    APP_SECRET: 'dkrhmji4z14k2wf', /*<YOUR APP SECRET HERE>*/
+    redirectUri: 'https://astrovicapps.com/_apptest/tidropbox_cb.html', /*<YOUR OAuth2 Redirect URI SET TO DROPBOX APP CONSOLE>*/
+    response_type: "code", // "token" or "code". Token flow expires after 4 hours!
+    app_mime_scheme: "tidropbox" // *<YOUR APP MIME SCHEME HERE SET TO TIAPP.XML>*/
+});
 ```
-### OAauth 2 token flow
-Generating a token to be able to invoke methods.
-Callback return an object with these parameters:
-- **success** (*boolean*): response result
-- **access_token** (*string*): access token key
-- **msg** (*string*): description of the response result
+### - generateAuthUrl
+**`TiDropbox.generateAuthUrl(callback)`**
+| Callback parameters| Type |Description |
+|--|--|--|
+| **success** | *Boolean* | Response result|
+| **access_token** | *String* | Access token key|
+| **msg** | *String* | Description of the response result |
+
+This allows you to generate a token to be able to invoke methods.
 
 ```js
 TiDropbox.generateAuthUrl(function(e){
@@ -61,104 +183,162 @@ TiDropbox.generateAuthUrl(function(e){
     };
 });
 ```
-### API call
-After obtaining a valid token, you can call any method, simply use the function:
-```js
-TiDropbox.callMethod (methodStr, paramsObj, fileBin, onSuccessCallback, onErrorCallback)
-```
-- **methodStr** (*string*): represent API target. It contains Dropbox's namespace and method name. eg. `"files/upload"` or `"sharing/share_folder"` or more at [/lib/dropboxAPIv2.js]
-- **paramsObj** (*object*): parameters, depends on resource field
-- **fileBin** (*blob/null*): file to upload, depends on resource field
-- **onSuccessCallback** (*function*): callback on succes
-- **onErrorCallback** (*function*): callback on error
+### - callMethod
+**`TiDropbox.callMethod(parameters)`**
+|Parameters|Type|Required|Description |
+|--|--|--|--|
+| **methodStr** | *String* | ✅ | represent API target. It contains Dropbox's namespace and method name. eg. `"files/upload"` or `"sharing/share_folder"` or more at [/lib/dropboxAPIv2.js]|
+| **paramsObj** | *Object* | ✅ | Parameters object, depends on resource field|
+| **fileBin** | *Blob/null* | ✅ | File to upload, depends on resource field |
+| **onSuccessCallback** | *Function* | ✅ | Callback on succes |
+| **onErrorCallback** | *Function* | ✅ | Callback on error |
+| **callMethodXhrObjCallback** | *Function* | | return directly the *TiDropbox.xhr* object of the current *TiDropbox.callMethod*, so you can invoke all xhr methods you need: abort, onload, onsendstream, ecc.. |
 
-### Revoke AccessToken
-Revoke the access token.
-Callback return an object with these parameters:
-- **success** (*boolean*): response result
-- **access_token** (*string*): access token key
-- **msg** (*string*): description of the response result
+After obtaining a valid token, you can call any method:
 ```js
-TiDropbox.revokeAccessToken(function(e){
-  if(e.success){
-    // Logout, do something...
-    Titanium.UI.createAlertDialog({
-        title: "REVOKE AUTH SUCCESS",
-        message: e.msg,
-        buttonNames: ['OK']
-    }).show();
-  }else{
-    Titanium.UI.createAlertDialog({
-        title: "REVOKE AUTH PROBLEM",
-        message: e.msg,
-        buttonNames: ['OK']
-    }).show();
-  };    
+// Upload the a.txt file to my app's Dropbox home 
+TiDropbox.callMethod({
+    methodStr: "files/upload",
+    paramsObj: {
+        path: "/a.txt",
+        mode: "add",
+        autorename: true,
+        mute: false
+    },
+    fileBin: Ti.Filesystem.getFile(Ti.Filesystem.resourcesDirectory, "a.txt").read(),
+    onSuccessCallback: (xhr) => {
+        console.log("onSuccessCallback checkins response-> " + xhr.responseText);
+    },
+    onErrorCallback: (e) => {
+        console.error("onErrorCallback checkins response-> " + JSON.stringify(e));
+        if (JSON.stringify(e).indexOf("invalid_access_token") != -1) {
+            //The session has expired, I need a new token };
+            // Do something...			
+        }
+    },
+    callMethodXhrObjCallback: (currentCallMethodXhr) => {
+        currentCallMethodXhr.onsendstream = function (e) {
+            if (e.progress) {
+                console.log(JSON.stringify('Upload progress --> ' + (e.progress * 100) + '%'));
+            }
+        }
+    }
 });
 ```
 
-That's all. Simple :)
+### - revokeAccessToken
+**`TiDropbox.revokeAccessToken(callback)`**
+| Callback parameters| Type |Description |
+|--|--|--|
+| **success** | *Boolean* | Response result|
+| **access_token** | *String* | Access token key|
+| **msg** | *String* | Description of the response result |
+Revoke the access token.
+```js
+TiDropbox.revokeAccessToken(function (e) {
+    if (e.success) {
+        // Logout, do something...
+        Titanium.UI.createAlertDialog({
+            title: "REVOKE AUTH SUCCESS",
+            message: e.msg,
+            buttonNames: ['OK']
+        }).show();
+    } else {
+        Titanium.UI.createAlertDialog({
+            title: "REVOKE AUTH PROBLEM",
+            message: e.msg,
+            buttonNames: ['OK']
+        }).show();
+    };
+});
+```
+
+That's all! :)
 
 # Example of use
 ### File upload
 ```js
 var TiDropbox = require("ti.dropbox").TiDropbox;
-TiDropbox.init('<YOUR APP KEY HERE>', '<YOUR redirect_uri HERE>');
+TiDropbox.init({
+    APP_KEY: 'e9tribefg77q4wg', /*<YOUR APP KEY HERE>*/
+    APP_SECRET: 'dkrhmji4z14k2wf', /*<YOUR APP SECRET HERE>*/
+    redirectUri: 'https://astrovicapps.com/_apptest/tidropbox_cb.html', /*<YOUR OAuth2 Redirect URI SET TO DROPBOX APP CONSOLE>*/
+    response_type: "code", // "token" or "code". Token flow expires after 4 hours!
+    app_mime_scheme: "tidropbox" // *<YOUR APP MIME SCHEME HERE SET TO TIAPP.XML>*/
+});
 
 // Check if I have a token
-if(Ti.App.Properties.getString('DROPBOX_TOKENS',null))){
+if (Ti.App.Properties.getString('DROPBOX_TOKENS', null)) {
     login();
- }else{
-    TiDropbox.revokeAccessToken(function(){
+} else {
+    TiDropbox.revokeAccessToken(function () {
         // Logout, do something...
     });
 };
 
-function login(){
-    TiDropbox.generateAuthUrl(function(e){
-      if(e.success){
-        // I'm logged, now I can call any method (/lib/dropboxAPIv2.js)
-        // For example, if I want upload a.txt file on Dropbox App root folder
-        var methodStr = "files/upload";
-        var paramsObj: {
-          path: "/a.txt",
-          mode: "add",
-          autorename: true,
-          mute: false
+function login() {
+    TiDropbox.generateAuthUrl(function (e) {
+        if (e.success) {
+            // I'm logged, now I can call any method (/lib/dropboxAPIv2.js)
+            // For example, if I want upload a.txt file on Dropbox App root folder
+            fileUpload();
+        } else {
+            Titanium.UI.createAlertDialog({
+                title: "AUTH PROBLEM",
+                message: e.msg,
+                buttonNames: ['OK']
+            }).show();
         };
-        var fileBin = Ti.Filesystem.getFile(Ti.Filesystem.resourcesDirectory, "a.txt").read();
-        TiDropbox.callMethod(methodStr, paramsObj, fileBin, onSuccessCallback, onErrorCallback)
-      }else{
-        Titanium.UI.createAlertDialog({
-            title: "AUTH PROBLEM",
-            message: e.msg,
-            buttonNames: ['OK']
-        }).show();
-      };
     });
 };
 
-// callback functions
-function onSuccessCallback(xhr) {
-    Ti.API.info("onSuccessCallback checkins response-> " + xhr.responseText);
-    Titanium.UI.createAlertDialog({
-        title: "METHOD SUCCESS",
-        message: xhr.responseText,
-        buttonNames: ['OK']
-    }).show();
-};
+function fileUpload() {
 
-function onErrorCallback(e) {
-    Ti.API.info("onErrorCallback checkins response-> " + JSON.stringify(e));
-    Titanium.UI.createAlertDialog({
-        title: "METHOD FAILED",
-        message: JSON.stringify(e),
-        buttonNames: ['OK']
-    }).show();
-    if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
-        //The session has expired, I need a new token
-        Ti.App.Properties.setString('DROPBOX_TOKENS',null);
-        login();
+    TiDropbox.callMethod({
+        methodStr: "files/upload",
+        paramsObj: {
+            path: "/a.txt",
+            mode: "add",
+            autorename: true,
+            mute: false
+        },
+        fileBin: Ti.Filesystem.getFile(Ti.Filesystem.resourcesDirectory, "a.txt").read(),
+        onSuccessCallback: onSuccessCallback,
+        onErrorCallback: onErrorCallback,
+        callMethodXhrObjCallback: callMethodXhrObjCallback
+    });
+
+    // callback functions
+    function onSuccessCallback(xhr) {
+        Ti.API.info("onSuccessCallback checkins response-> " + xhr.responseText);
+        Titanium.UI.createAlertDialog({
+            title: "METHOD SUCCESS",
+            message: xhr.responseText,
+            buttonNames: ['OK']
+        }).show();
+    };
+
+    function onErrorCallback(e) {
+        Ti.API.info("onErrorCallback checkins response-> " + JSON.stringify(e));
+        Titanium.UI.createAlertDialog({
+            title: "METHOD FAILED",
+            message: JSON.stringify(e),
+            buttonNames: ['OK']
+        }).show();
+        if (JSON.stringify(e).indexOf("invalid_access_token") != -1) {
+            //The session has expired, I need a new token
+            Ti.App.Properties.setString('DROPBOX_TOKENS', null);
+            login();
+        };
+    };
+
+    function callMethodXhrObjCallback(currentCallMethodXhr) {
+        currentCallMethodXhr.onsendstream = function (e) {
+            Ti.API.debug(JSON.stringify(e));
+            if (e.progress) {
+                Ti.API.debug(JSON.stringify('Upload progress --> ' + (e.progress * 100) + '%'));
+            }
+        };
     };
 };
 ```
@@ -166,79 +346,107 @@ function onErrorCallback(e) {
 ### File download
 ```js
 var TiDropbox = require("ti.dropbox").TiDropbox;
-TiDropbox.init('<YOUR APP KEY HERE>', '<YOUR redirect_uri HERE>');
+TiDropbox.init({
+    APP_KEY: 'e9tribefg77q4wg', /*<YOUR APP KEY HERE>*/
+    APP_SECRET: 'dkrhmji4z14k2wf', /*<YOUR APP SECRET HERE>*/
+    redirectUri: 'https://astrovicapps.com/_apptest/tidropbox_cb.html', /*<YOUR OAuth2 Redirect URI SET TO DROPBOX APP CONSOLE>*/
+    response_type: "code", // "token" or "code". Token flow expires after 4 hours!
+    app_mime_scheme: "tidropbox" // *<YOUR APP MIME SCHEME HERE SET TO TIAPP.XML>*/
+});
 
 // Check if I have a token
-if(Ti.App.Properties.getString('DROPBOX_TOKENS',null))){
+if (Ti.App.Properties.getString('DROPBOX_TOKENS', null)) {
     login();
- }else{
-    TiDropbox.revokeAccessToken(function(){
+} else {
+    TiDropbox.revokeAccessToken(function () {
         // Logout, do something...
     });
 };
 
-function login(){
-    TiDropbox.generateAuthUrl(function(){
-      if(e.success){
-        // I'm logged, now I can call any method (/lib/dropboxAPIv2.js)
-        // For example, if I want download Prime_Numbers.txt file from Dropbox App
-        var methodStr = "files/download";
-        var paramsObj: {
-            path: "/Homework/math/Prime_Numbers.txt"
-        };        
-        TiDropbox.callMethod(methodStr, paramsObj, null, onSuccessCallback, onErrorCallback)
-      }else{
-        Titanium.UI.createAlertDialog({
-            title: "AUTH PROBLEM",
-            message: e.msg,
-            buttonNames: ['OK']
-        }).show();
-      };
+function login() {
+    TiDropbox.generateAuthUrl(function () {
+        if (e.success) {
+            // I'm logged, now I can call any method (/lib/dropboxAPIv2.js)
+            // For example, if I want download Prime_Numbers.txt file from Dropbox App
+            downloadFile();
+        } else {
+            Titanium.UI.createAlertDialog({
+                title: "AUTH PROBLEM",
+                message: e.msg,
+                buttonNames: ['OK']
+            }).show();
+        };
     });
 };
 
-// callback functions
-function onSuccessCallback(xhr) {
-  Ti.API.debug("onSuccessCallback checkins response-> " + xhr.responseText);
+function downloadFile() {
 
-  // Write downloaded data in a file
-  if(xhr.responseData){
-    var filePath = Titanium.Filesystem.applicationDataDirectory + "myDownloadedFile.txt";
-    var f = Titanium.Filesystem.getFile(filePath);
-    f.write(xhr.responseData);
+    TiDropbox.callMethod({
+        methodStr: "files/download",
+        paramsObj: {
+            path: "/Homework/math/Prime_Numbers.txt"
+        },
+        fileBin: null,
+        onSuccessCallback: onSuccessCallback,
+        onErrorCallback: onErrorCallback,
+        callMethodXhrObjCallback: callMethodXhrObjCallback
+    });
 
-    // I check if I saved the file properly
-    setTimeout(function(){
-      Ti.API.debug(filePath + " exists? ---> " + file.exists());
-      if(f.exists()){
-        if(OS_IOS){
-          Ti.UI.iOS.createDocumentViewer({url:filePath}).show();
+    // callback functions
+    function onSuccessCallback(xhr) {
+        Ti.API.debug("onSuccessCallback checkins response-> " + xhr.responseText);
+
+        // Write downloaded data in a file
+        if (xhr.responseData) {
+            var filePath = Titanium.Filesystem.applicationDataDirectory + "myDownloadedFile.txt";
+            var f = Titanium.Filesystem.getFile(filePath);
+            f.write(xhr.responseData);
+
+            // I check if I saved the file properly
+            setTimeout(function () {
+                Ti.API.debug(filePath + " exists? ---> " + file.exists());
+                if (f.exists()) {
+                    if (OS_IOS) {
+                        Ti.UI.iOS.createDocumentViewer({
+                            url: filePath
+                        }).show();
+                    };
+                } else {
+                    Titanium.UI.createAlertDialog({
+                        title: "DOWNLOAD FAILED",
+                        message: "Something went wrong in the file writing...",
+                        buttonNames: ['OK']
+                    }).show();
+                };
+            }, 1000);
         };
-      }else{
+    };
+
+    function onErrorCallback(e) {
+        Ti.API.debug("onErrorCallback checkins response-> " + JSON.stringify(e));
         Titanium.UI.createAlertDialog({
-            title: "DOWNLOAD FAILED",
-            message: "Something went wrong in the file writing...",
+            title: "METHOD FAILED",
+            message: JSON.stringify(e),
             buttonNames: ['OK']
         }).show();
-      };
-    },1000);
-  };
-};
-
-function onErrorCallback(e) {
-    Ti.API.debug("onErrorCallback checkins response-> " + JSON.stringify(e));
-    Titanium.UI.createAlertDialog({
-        title: "METHOD FAILED",
-        message: JSON.stringify(e),
-        buttonNames: ['OK']
-    }).show();
-    if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
-        //The session has expired, I need a new token
-        Ti.App.Properties.setString('DROPBOX_TOKENS',null);
-        login();
+        if (JSON.stringify(e).indexOf("invalid_access_token") != -1) {
+            //The session has expired, I need a new token
+            Ti.App.Properties.setString('DROPBOX_TOKENS', null);
+            login();
+        };
     };
-};
+
+    function callMethodXhrObjCallback(currentCallMethodXhr) {
+        currentCallMethodXhr.onsendstream = function (e) {
+            if (e.progress) {
+                console.log(JSON.stringify('Upload progress --> ' + (e.progress * 100) + '%'));
+            }
+        }
+    }
+}
 ```
+
+Download and build this project to test other methods
 
 
 # Screenshots
@@ -260,7 +468,7 @@ function onErrorCallback(e) {
 
 ### Todos
 
- - OAauth 2 code flow
+ - OAauth 2 code flow  ✅ DONE!
 
 # Guidelines for pull requests
 
@@ -282,7 +490,7 @@ All done :) Now you can send your pull request.
 
 License
 ----
-**Copyright (c) 2016 Vittorio Sorbera, astrovicApps**
+**Copyright (c) 2016-23 Vittorio Sorbera, AstrovicApps**
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -5,6 +5,51 @@ module.exports = (function () { return this; })();
 module.exports.location = {};
 
 },{}],2:[function(require,module,exports){
+(function (setTimeout){
+/* global Ti:true, Titanium:true */
+
+var process = module.exports = {};
+
+process.nextTick = function nextTick(fn) {
+  setTimeout(fn, 0);
+};
+
+process.title = 'titanium';
+process.titanium = true;
+process.env = {};
+process.argv = [];
+
+process.binding = function (name) {
+  throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () {
+  return '/';
+};
+
+process.chdir = function (dir) {
+  throw new Error('process.chdir is not supported');
+};
+
+process.stdout = {};
+process.stderr = {};
+
+process.stdout.write = function (msg) {
+  Ti.API.info(msg);
+};
+
+process.stderr.write = function (msg) {
+  Ti.API.error(msg);
+};
+
+'addEventListener removeEventListener removeListener hasEventListener fireEvent emit on off'.split(' ').forEach(function (name) {
+  process[ name ] = noop;
+});
+
+function noop() {}
+
+}).call(this,require("--timers--").setTimeout)
+},{"--timers--":3}],3:[function(require,module,exports){
 (function (global){
 
 module.exports.clearInterval = clearInterval;
@@ -57,7 +102,1057 @@ function setTimeout(func, delay) {
 }
 
 }).call(this,require("--global--"))
-},{"--global--":1}],3:[function(require,module,exports){
+},{"--global--":1}],4:[function(require,module,exports){
+// http://wiki.commonjs.org/wiki/Unit_Testing/1.0
+//
+// THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
+//
+// Originally from narwhal.js (http://narwhaljs.org)
+// Copyright (c) 2009 Thomas Robinson <280north.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the 'Software'), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// when used in node, this will actually load the util module we depend on
+// versus loading the builtin util module as happens otherwise
+// this is a bug in node module loading as far as I am concerned
+var util = require('util/');
+
+var pSlice = Array.prototype.slice;
+var hasOwn = Object.prototype.hasOwnProperty;
+
+// 1. The assert module provides functions that throw
+// AssertionError's when particular conditions are not met. The
+// assert module must conform to the following interface.
+
+var assert = module.exports = ok;
+
+// 2. The AssertionError is defined in assert.
+// new assert.AssertionError({ message: message,
+//                             actual: actual,
+//                             expected: expected })
+
+assert.AssertionError = function AssertionError(options) {
+  this.name = 'AssertionError';
+  this.actual = options.actual;
+  this.expected = options.expected;
+  this.operator = options.operator;
+  if (options.message) {
+    this.message = options.message;
+    this.generatedMessage = false;
+  } else {
+    this.message = getMessage(this);
+    this.generatedMessage = true;
+  }
+  var stackStartFunction = options.stackStartFunction || fail;
+
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this, stackStartFunction);
+  }
+  else {
+    // non v8 browsers so we can have a stacktrace
+    var err = new Error();
+    if (err.stack) {
+      var out = err.stack;
+
+      // try to strip useless frames
+      var fn_name = stackStartFunction.name;
+      var idx = out.indexOf('\n' + fn_name);
+      if (idx >= 0) {
+        // once we have located the function frame
+        // we need to strip out everything before it (and its line)
+        var next_line = out.indexOf('\n', idx + 1);
+        out = out.substring(next_line + 1);
+      }
+
+      this.stack = out;
+    }
+  }
+};
+
+// assert.AssertionError instanceof Error
+util.inherits(assert.AssertionError, Error);
+
+function replacer(key, value) {
+  if (util.isUndefined(value)) {
+    return '' + value;
+  }
+  if (util.isNumber(value) && !isFinite(value)) {
+    return value.toString();
+  }
+  if (util.isFunction(value) || util.isRegExp(value)) {
+    return value.toString();
+  }
+  return value;
+}
+
+function truncate(s, n) {
+  if (util.isString(s)) {
+    return s.length < n ? s : s.slice(0, n);
+  } else {
+    return s;
+  }
+}
+
+function getMessage(self) {
+  return truncate(JSON.stringify(self.actual, replacer), 128) + ' ' +
+         self.operator + ' ' +
+         truncate(JSON.stringify(self.expected, replacer), 128);
+}
+
+// At present only the three keys mentioned above are used and
+// understood by the spec. Implementations or sub modules can pass
+// other keys to the AssertionError's constructor - they will be
+// ignored.
+
+// 3. All of the following functions must throw an AssertionError
+// when a corresponding condition is not met, with a message that
+// may be undefined if not provided.  All assertion methods provide
+// both the actual and expected values to the assertion error for
+// display purposes.
+
+function fail(actual, expected, message, operator, stackStartFunction) {
+  throw new assert.AssertionError({
+    message: message,
+    actual: actual,
+    expected: expected,
+    operator: operator,
+    stackStartFunction: stackStartFunction
+  });
+}
+
+// EXTENSION! allows for well behaved errors defined elsewhere.
+assert.fail = fail;
+
+// 4. Pure assertion tests whether a value is truthy, as determined
+// by !!guard.
+// assert.ok(guard, message_opt);
+// This statement is equivalent to assert.equal(true, !!guard,
+// message_opt);. To test strictly for the value true, use
+// assert.strictEqual(true, guard, message_opt);.
+
+function ok(value, message) {
+  if (!value) fail(value, true, message, '==', assert.ok);
+}
+assert.ok = ok;
+
+// 5. The equality assertion tests shallow, coercive equality with
+// ==.
+// assert.equal(actual, expected, message_opt);
+
+assert.equal = function equal(actual, expected, message) {
+  if (actual != expected) fail(actual, expected, message, '==', assert.equal);
+};
+
+// 6. The non-equality assertion tests for whether two objects are not equal
+// with != assert.notEqual(actual, expected, message_opt);
+
+assert.notEqual = function notEqual(actual, expected, message) {
+  if (actual == expected) {
+    fail(actual, expected, message, '!=', assert.notEqual);
+  }
+};
+
+// 7. The equivalence assertion tests a deep equality relation.
+// assert.deepEqual(actual, expected, message_opt);
+
+assert.deepEqual = function deepEqual(actual, expected, message) {
+  if (!_deepEqual(actual, expected)) {
+    fail(actual, expected, message, 'deepEqual', assert.deepEqual);
+  }
+};
+
+function _deepEqual(actual, expected) {
+  // 7.1. All identical values are equivalent, as determined by ===.
+  if (actual === expected) {
+    return true;
+
+  } else if (util.isBuffer(actual) && util.isBuffer(expected)) {
+    if (actual.length != expected.length) return false;
+
+    for (var i = 0; i < actual.length; i++) {
+      if (actual[i] !== expected[i]) return false;
+    }
+
+    return true;
+
+  // 7.2. If the expected value is a Date object, the actual value is
+  // equivalent if it is also a Date object that refers to the same time.
+  } else if (util.isDate(actual) && util.isDate(expected)) {
+    return actual.getTime() === expected.getTime();
+
+  // 7.3 If the expected value is a RegExp object, the actual value is
+  // equivalent if it is also a RegExp object with the same source and
+  // properties (`global`, `multiline`, `lastIndex`, `ignoreCase`).
+  } else if (util.isRegExp(actual) && util.isRegExp(expected)) {
+    return actual.source === expected.source &&
+           actual.global === expected.global &&
+           actual.multiline === expected.multiline &&
+           actual.lastIndex === expected.lastIndex &&
+           actual.ignoreCase === expected.ignoreCase;
+
+  // 7.4. Other pairs that do not both pass typeof value == 'object',
+  // equivalence is determined by ==.
+  } else if (!util.isObject(actual) && !util.isObject(expected)) {
+    return actual == expected;
+
+  // 7.5 For all other Object pairs, including Array objects, equivalence is
+  // determined by having the same number of owned properties (as verified
+  // with Object.prototype.hasOwnProperty.call), the same set of keys
+  // (although not necessarily the same order), equivalent values for every
+  // corresponding key, and an identical 'prototype' property. Note: this
+  // accounts for both named and indexed properties on Arrays.
+  } else {
+    return objEquiv(actual, expected);
+  }
+}
+
+function isArguments(object) {
+  return Object.prototype.toString.call(object) == '[object Arguments]';
+}
+
+function objEquiv(a, b) {
+  if (util.isNullOrUndefined(a) || util.isNullOrUndefined(b))
+    return false;
+  // an identical 'prototype' property.
+  if (a.prototype !== b.prototype) return false;
+  // if one is a primitive, the other must be same
+  if (util.isPrimitive(a) || util.isPrimitive(b)) {
+    return a === b;
+  }
+  var aIsArgs = isArguments(a),
+      bIsArgs = isArguments(b);
+  if ((aIsArgs && !bIsArgs) || (!aIsArgs && bIsArgs))
+    return false;
+  if (aIsArgs) {
+    a = pSlice.call(a);
+    b = pSlice.call(b);
+    return _deepEqual(a, b);
+  }
+  var ka = objectKeys(a),
+      kb = objectKeys(b),
+      key, i;
+  // having the same number of owned properties (keys incorporates
+  // hasOwnProperty)
+  if (ka.length != kb.length)
+    return false;
+  //the same set of keys (although not necessarily the same order),
+  ka.sort();
+  kb.sort();
+  //~~~cheap key test
+  for (i = ka.length - 1; i >= 0; i--) {
+    if (ka[i] != kb[i])
+      return false;
+  }
+  //equivalent values for every corresponding key, and
+  //~~~possibly expensive deep test
+  for (i = ka.length - 1; i >= 0; i--) {
+    key = ka[i];
+    if (!_deepEqual(a[key], b[key])) return false;
+  }
+  return true;
+}
+
+// 8. The non-equivalence assertion tests for any deep inequality.
+// assert.notDeepEqual(actual, expected, message_opt);
+
+assert.notDeepEqual = function notDeepEqual(actual, expected, message) {
+  if (_deepEqual(actual, expected)) {
+    fail(actual, expected, message, 'notDeepEqual', assert.notDeepEqual);
+  }
+};
+
+// 9. The strict equality assertion tests strict equality, as determined by ===.
+// assert.strictEqual(actual, expected, message_opt);
+
+assert.strictEqual = function strictEqual(actual, expected, message) {
+  if (actual !== expected) {
+    fail(actual, expected, message, '===', assert.strictEqual);
+  }
+};
+
+// 10. The strict non-equality assertion tests for strict inequality, as
+// determined by !==.  assert.notStrictEqual(actual, expected, message_opt);
+
+assert.notStrictEqual = function notStrictEqual(actual, expected, message) {
+  if (actual === expected) {
+    fail(actual, expected, message, '!==', assert.notStrictEqual);
+  }
+};
+
+function expectedException(actual, expected) {
+  if (!actual || !expected) {
+    return false;
+  }
+
+  if (Object.prototype.toString.call(expected) == '[object RegExp]') {
+    return expected.test(actual);
+  } else if (actual instanceof expected) {
+    return true;
+  } else if (expected.call({}, actual) === true) {
+    return true;
+  }
+
+  return false;
+}
+
+function _throws(shouldThrow, block, expected, message) {
+  var actual;
+
+  if (util.isString(expected)) {
+    message = expected;
+    expected = null;
+  }
+
+  try {
+    block();
+  } catch (e) {
+    actual = e;
+  }
+
+  message = (expected && expected.name ? ' (' + expected.name + ').' : '.') +
+            (message ? ' ' + message : '.');
+
+  if (shouldThrow && !actual) {
+    fail(actual, expected, 'Missing expected exception' + message);
+  }
+
+  if (!shouldThrow && expectedException(actual, expected)) {
+    fail(actual, expected, 'Got unwanted exception' + message);
+  }
+
+  if ((shouldThrow && actual && expected &&
+      !expectedException(actual, expected)) || (!shouldThrow && actual)) {
+    throw actual;
+  }
+}
+
+// 11. Expected to throw an error:
+// assert.throws(block, Error_opt, message_opt);
+
+assert.throws = function(block, /*optional*/error, /*optional*/message) {
+  _throws.apply(this, [true].concat(pSlice.call(arguments)));
+};
+
+// EXTENSION! This is annoying to write outside this module.
+assert.doesNotThrow = function(block, /*optional*/message) {
+  _throws.apply(this, [false].concat(pSlice.call(arguments)));
+};
+
+assert.ifError = function(err) { if (err) {throw err;}};
+
+var objectKeys = Object.keys || function (obj) {
+  var keys = [];
+  for (var key in obj) {
+    if (hasOwn.call(obj, key)) keys.push(key);
+  }
+  return keys;
+};
+
+},{"util/":7}],5:[function(require,module,exports){
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+},{}],6:[function(require,module,exports){
+module.exports = function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.readUInt8 === 'function';
+}
+},{}],7:[function(require,module,exports){
+(function (process,global,console){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var formatRegExp = /%[sdj%]/g;
+exports.format = function(f) {
+  if (!isString(f)) {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function(x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s': return String(args[i++]);
+      case '%d': return Number(args[i++]);
+      case '%j':
+        try {
+          return JSON.stringify(args[i++]);
+        } catch (_) {
+          return '[Circular]';
+        }
+      default:
+        return x;
+    }
+  });
+  for (var x = args[i]; i < len; x = args[++i]) {
+    if (isNull(x) || !isObject(x)) {
+      str += ' ' + x;
+    } else {
+      str += ' ' + inspect(x);
+    }
+  }
+  return str;
+};
+
+
+// Mark that a method should not be used.
+// Returns a modified function which warns once by default.
+// If --no-deprecation is set, then it is a no-op.
+exports.deprecate = function(fn, msg) {
+  // Allow for deprecating things in the process of starting up.
+  if (isUndefined(global.process)) {
+    return function() {
+      return exports.deprecate(fn, msg).apply(this, arguments);
+    };
+  }
+
+  if (process.noDeprecation === true) {
+    return fn;
+  }
+
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (process.throwDeprecation) {
+        throw new Error(msg);
+      } else if (process.traceDeprecation) {
+        console.trace(msg);
+      } else {
+        console.error(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+
+  return deprecated;
+};
+
+
+var debugs = {};
+var debugEnviron;
+exports.debuglog = function(set) {
+  if (isUndefined(debugEnviron))
+    debugEnviron = process.env.NODE_DEBUG || '';
+  set = set.toUpperCase();
+  if (!debugs[set]) {
+    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+      var pid = process.pid;
+      debugs[set] = function() {
+        var msg = exports.format.apply(exports, arguments);
+        console.error('%s %d: %s', set, pid, msg);
+      };
+    } else {
+      debugs[set] = function() {};
+    }
+  }
+  return debugs[set];
+};
+
+
+/**
+ * Echos the value of a value. Trys to print the value out
+ * in the best way possible given the different types.
+ *
+ * @param {Object} obj The object to print out.
+ * @param {Object} opts Optional options object that alters the output.
+ */
+/* legacy: obj, showHidden, depth, colors*/
+function inspect(obj, opts) {
+  // default options
+  var ctx = {
+    seen: [],
+    stylize: stylizeNoColor
+  };
+  // legacy...
+  if (arguments.length >= 3) ctx.depth = arguments[2];
+  if (arguments.length >= 4) ctx.colors = arguments[3];
+  if (isBoolean(opts)) {
+    // legacy...
+    ctx.showHidden = opts;
+  } else if (opts) {
+    // got an "options" object
+    exports._extend(ctx, opts);
+  }
+  // set default options
+  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+  if (isUndefined(ctx.depth)) ctx.depth = 2;
+  if (isUndefined(ctx.colors)) ctx.colors = false;
+  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+  if (ctx.colors) ctx.stylize = stylizeWithColor;
+  return formatValue(ctx, obj, ctx.depth);
+}
+exports.inspect = inspect;
+
+
+// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+inspect.colors = {
+  'bold' : [1, 22],
+  'italic' : [3, 23],
+  'underline' : [4, 24],
+  'inverse' : [7, 27],
+  'white' : [37, 39],
+  'grey' : [90, 39],
+  'black' : [30, 39],
+  'blue' : [34, 39],
+  'cyan' : [36, 39],
+  'green' : [32, 39],
+  'magenta' : [35, 39],
+  'red' : [31, 39],
+  'yellow' : [33, 39]
+};
+
+// Don't use 'blue' not visible on cmd.exe
+inspect.styles = {
+  'special': 'cyan',
+  'number': 'yellow',
+  'boolean': 'yellow',
+  'undefined': 'grey',
+  'null': 'bold',
+  'string': 'green',
+  'date': 'magenta',
+  // "name": intentionally not styling
+  'regexp': 'red'
+};
+
+
+function stylizeWithColor(str, styleType) {
+  var style = inspect.styles[styleType];
+
+  if (style) {
+    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+           '\u001b[' + inspect.colors[style][1] + 'm';
+  } else {
+    return str;
+  }
+}
+
+
+function stylizeNoColor(str, styleType) {
+  return str;
+}
+
+
+function arrayToHash(array) {
+  var hash = {};
+
+  array.forEach(function(val, idx) {
+    hash[val] = true;
+  });
+
+  return hash;
+}
+
+
+function formatValue(ctx, value, recurseTimes) {
+  // Provide a hook for user-specified inspect functions.
+  // Check that value is an object with an inspect function on it
+  if (ctx.customInspect &&
+      value &&
+      isFunction(value.inspect) &&
+      // Filter out the util module, it's inspect function is special
+      value.inspect !== exports.inspect &&
+      // Also filter out any prototype objects using the circular check.
+      !(value.constructor && value.constructor.prototype === value)) {
+    var ret = value.inspect(recurseTimes, ctx);
+    if (!isString(ret)) {
+      ret = formatValue(ctx, ret, recurseTimes);
+    }
+    return ret;
+  }
+
+  // Primitive types cannot have properties
+  var primitive = formatPrimitive(ctx, value);
+  if (primitive) {
+    return primitive;
+  }
+
+  // Look up the keys of the object.
+  var keys = Object.keys(value);
+  var visibleKeys = arrayToHash(keys);
+
+  if (ctx.showHidden) {
+    keys = Object.getOwnPropertyNames(value);
+  }
+
+  // IE doesn't make error fields non-enumerable
+  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+  if (isError(value)
+      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+    return formatError(value);
+  }
+
+  // Some type of object without properties can be shortcutted.
+  if (keys.length === 0) {
+    if (isFunction(value)) {
+      var name = value.name ? ': ' + value.name : '';
+      return ctx.stylize('[Function' + name + ']', 'special');
+    }
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    }
+    if (isDate(value)) {
+      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+    }
+    if (isError(value)) {
+      return formatError(value);
+    }
+  }
+
+  var base = '', array = false, braces = ['{', '}'];
+
+  // Make Array say that they are Array
+  if (isArray(value)) {
+    array = true;
+    braces = ['[', ']'];
+  }
+
+  // Make functions say that they are functions
+  if (isFunction(value)) {
+    var n = value.name ? ': ' + value.name : '';
+    base = ' [Function' + n + ']';
+  }
+
+  // Make RegExps say that they are RegExps
+  if (isRegExp(value)) {
+    base = ' ' + RegExp.prototype.toString.call(value);
+  }
+
+  // Make dates with properties first say the date
+  if (isDate(value)) {
+    base = ' ' + Date.prototype.toUTCString.call(value);
+  }
+
+  // Make error with message first say the error
+  if (isError(value)) {
+    base = ' ' + formatError(value);
+  }
+
+  if (keys.length === 0 && (!array || value.length == 0)) {
+    return braces[0] + base + braces[1];
+  }
+
+  if (recurseTimes < 0) {
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    } else {
+      return ctx.stylize('[Object]', 'special');
+    }
+  }
+
+  ctx.seen.push(value);
+
+  var output;
+  if (array) {
+    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+  } else {
+    output = keys.map(function(key) {
+      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    });
+  }
+
+  ctx.seen.pop();
+
+  return reduceToSingleString(output, base, braces);
+}
+
+
+function formatPrimitive(ctx, value) {
+  if (isUndefined(value))
+    return ctx.stylize('undefined', 'undefined');
+  if (isString(value)) {
+    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                             .replace(/'/g, "\\'")
+                                             .replace(/\\"/g, '"') + '\'';
+    return ctx.stylize(simple, 'string');
+  }
+  if (isNumber(value))
+    return ctx.stylize('' + value, 'number');
+  if (isBoolean(value))
+    return ctx.stylize('' + value, 'boolean');
+  // For some reason typeof null is "object", so special case here.
+  if (isNull(value))
+    return ctx.stylize('null', 'null');
+}
+
+
+function formatError(value) {
+  return '[' + Error.prototype.toString.call(value) + ']';
+}
+
+
+function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+  var output = [];
+  for (var i = 0, l = value.length; i < l; ++i) {
+    if (hasOwnProperty(value, String(i))) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          String(i), true));
+    } else {
+      output.push('');
+    }
+  }
+  keys.forEach(function(key) {
+    if (!key.match(/^\d+$/)) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          key, true));
+    }
+  });
+  return output;
+}
+
+
+function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+  var name, str, desc;
+  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+  if (desc.get) {
+    if (desc.set) {
+      str = ctx.stylize('[Getter/Setter]', 'special');
+    } else {
+      str = ctx.stylize('[Getter]', 'special');
+    }
+  } else {
+    if (desc.set) {
+      str = ctx.stylize('[Setter]', 'special');
+    }
+  }
+  if (!hasOwnProperty(visibleKeys, key)) {
+    name = '[' + key + ']';
+  }
+  if (!str) {
+    if (ctx.seen.indexOf(desc.value) < 0) {
+      if (isNull(recurseTimes)) {
+        str = formatValue(ctx, desc.value, null);
+      } else {
+        str = formatValue(ctx, desc.value, recurseTimes - 1);
+      }
+      if (str.indexOf('\n') > -1) {
+        if (array) {
+          str = str.split('\n').map(function(line) {
+            return '  ' + line;
+          }).join('\n').substr(2);
+        } else {
+          str = '\n' + str.split('\n').map(function(line) {
+            return '   ' + line;
+          }).join('\n');
+        }
+      }
+    } else {
+      str = ctx.stylize('[Circular]', 'special');
+    }
+  }
+  if (isUndefined(name)) {
+    if (array && key.match(/^\d+$/)) {
+      return str;
+    }
+    name = JSON.stringify('' + key);
+    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+      name = name.substr(1, name.length - 2);
+      name = ctx.stylize(name, 'name');
+    } else {
+      name = name.replace(/'/g, "\\'")
+                 .replace(/\\"/g, '"')
+                 .replace(/(^"|"$)/g, "'");
+      name = ctx.stylize(name, 'string');
+    }
+  }
+
+  return name + ': ' + str;
+}
+
+
+function reduceToSingleString(output, base, braces) {
+  var numLinesEst = 0;
+  var length = output.reduce(function(prev, cur) {
+    numLinesEst++;
+    if (cur.indexOf('\n') >= 0) numLinesEst++;
+    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+  }, 0);
+
+  if (length > 60) {
+    return braces[0] +
+           (base === '' ? '' : base + '\n ') +
+           ' ' +
+           output.join(',\n  ') +
+           ' ' +
+           braces[1];
+  }
+
+  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+}
+
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+function isArray(ar) {
+  return Array.isArray(ar);
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return isObject(re) && objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return isObject(d) && objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return isObject(e) &&
+      (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = require('./support/isBuffer');
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+
+// log is just a thin wrapper to console.log that prepends a timestamp
+exports.log = function() {
+  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+};
+
+
+/**
+ * Inherit the prototype methods from one constructor into another.
+ *
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
+ *
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
+ */
+exports.inherits = require('inherits');
+
+exports._extend = function(origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
+};
+
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+}).call(this,require("--process--"),require("--global--"),require("--console--"))
+},{"--console--":9,"--global--":1,"--process--":2,"./support/isBuffer":6,"inherits":5}],8:[function(require,module,exports){
+module.exports = now
+
+function now() {
+    return new Date().getTime()
+}
+
+},{}],9:[function(require,module,exports){
+var util = require("util");
+var now = require("date-now");
+
+var _console = {};
+var times = {};
+
+var functions = [
+	['log','info'],
+	['info','info'],
+	['warn','warn'],
+	['error','error']
+];
+
+functions.forEach(function(tuple) {
+	_console[tuple[0]] = function() {
+		Ti.API[tuple[1]](util.format.apply(util, arguments));
+	};
+});
+
+_console.time = function(label) {
+	times[label] = now();
+};
+
+_console.timeEnd = function(label) {
+	var time = times[label];
+	if (!time) {
+		throw new Error("No such label: " + label);
+	}
+
+	var duration = now() - time;
+	_console.log(label + ": " + duration + "ms");
+};
+
+_console.trace = function() {
+	var err = new Error();
+	err.name = "Trace";
+	err.message = util.format.apply(null, arguments);
+	_console.error(err.stack);
+};
+
+_console.dir = function(object) {
+	_console.log(util.inspect(object) + "\n");
+};
+
+_console.assert = function(expression) {
+	if (!expression) {
+		var arr = Array.prototype.slice.call(arguments, 1);
+		require("assert").ok(false, util.format.apply(null, arr));
+	}
+};
+
+module.exports = _console;
+
+},{"assert":4,"date-now":8,"util":12}],10:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"dup":5}],11:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"dup":6}],12:[function(require,module,exports){
+arguments[4][7][0].apply(exports,arguments)
+},{"--console--":9,"--global--":1,"--process--":2,"./support/isBuffer":11,"dup":7,"inherits":10}],13:[function(require,module,exports){
 /**
  * this code was inspired by the work done by Adam Płócieniak
  * available at https://github.com/adasq/dropbox-v2-api/blob/master/dist/api.json
@@ -4003,8 +5098,8 @@ exports.dropboxAPIv2 = {
     }
 }
 
-},{}],4:[function(require,module,exports){
-(function (setTimeout){
+},{}],14:[function(require,module,exports){
+(function (console,setTimeout){
 /**
  *
  * this code was inspired by the work done by David Riccitelli
@@ -4028,29 +5123,48 @@ var TiDropbox = {};
 
 (function() {
 
-    var window;
+    var webView, Deeply;
     var dropboxAPIv2 = require("../lib/dropboxAPIv2").dropboxAPIv2;
     var OS_IOS = (Ti.Platform.osname != "android");
     var OS_ANDROID = !OS_IOS;
+    if (OS_ANDROID) {
+        Deeply = require('ti.deeply');
+        Deeply.setCallback(function (e) {
+            Ti.API.debug('Deep link called');            
+            androidDeepLink(e);
+        });
+    }
 
-    TiDropbox.init = function(clientId, redirectUri) {
-        TiDropbox.clientId = clientId;
-        TiDropbox.redirectUri = redirectUri;
+    TiDropbox.init = function(params) {
+        TiDropbox.APP_KEY = params.APP_KEY;
+        TiDropbox.APP_SECRET = params.APP_SECRET;
+        TiDropbox.redirectUri = params.redirectUri;
+        TiDropbox.response_type = params.response_type || "code"; // "token" or "code"
+        TiDropbox.app_mime_scheme = params.app_mime_scheme;
         TiDropbox.ACCESS_TOKEN = Ti.App.Properties.getString('DROPBOX_TOKENS',null);
+        TiDropbox.ACCESS_REFRESH_TOKEN = Ti.App.Properties.getString('DROPBOX_REFRESH_TOKENS', null);
         TiDropbox.xhr = null;
         TiDropbox.API_URL = "https://api.dropboxapi.com/2/";
     };
 
     TiDropbox.revokeAccessToken = function(revokeAuth_callback) {
-        TiDropbox.callMethod("auth/token/revoke", null, null, onSuccess_self, onFailed_self);
+        TiDropbox.callMethod({
+            methodStr: "auth/token/revoke",
+            paramsObj: null,
+            fileBin: null,
+            onSuccessCallback: onSuccess_self,
+            onErrorCallback: onFailed_self
+        });
+
+        Ti.App.Properties.setString('DROPBOX_TOKENS', null);
+        Ti.App.Properties.setString('DROPBOX_REFRESH_TOKENS', null);
 
         function onSuccess_self() {
             /*Titanium.UI.createAlertDialog({
                 title: "auth/token/revoke",
                 message: "LOGOUT SUCCESS",
                 buttonNames: ['OK']
-            }).show();*/
-            Ti.App.Properties.setString('DROPBOX_TOKENS',null);
+            }).show();*/           
             revokeAuth_callback({
                 access_token: null,
                 success : true,
@@ -4063,10 +5177,7 @@ var TiDropbox = {};
                 title: "auth/token/revoke",
                 message: JSON.stringify(e),
                 buttonNames: ['OK']
-            }).show();*/
-            //if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
-              Ti.App.Properties.setString('DROPBOX_TOKENS',null);
-            //};
+            }).show();*/            
             revokeAuth_callback({
                 access_token: null,
                 success : false,
@@ -4080,13 +5191,14 @@ var TiDropbox = {};
       		var searchKey = path.search('Documents');
       		path = path.substring(0, searchKey);
       		path = path + 'Library/Cookies/';
+            //path = path + 'SystemData/com.apple.SafariViewService/Library/Cookies';// + Ti.App.id;
       		var f = Ti.Filesystem.getFile(path);
       		Ti.API.debug("cookie path ---> " + path);
       		Ti.API.debug("cookie path exists() ---> " + f.exists());
       		if(f.exists()){
       			f.deleteDirectory(true);
       		};
-      		f=null;
+      		f=null;            
       	}else if(OS_ANDROID){
       		Ti.Network.removeAllSystemCookies();
       	};
@@ -4114,17 +5226,32 @@ var TiDropbox = {};
           return;
         };
 
+        var url;
+        if (TiDropbox.response_type === "code") {
+            url = 'https://www.dropbox.com/oauth2/authorize?response_type=code&token_access_type=offline&client_id=%s&redirect_uri=%s&force_reauthentication=true';
+        } else {
+            url = 'https://www.dropbox.com/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&force_reauthentication=true';
+        }
         showAuthorizeUI(
-            String.format('https://www.dropbox.com/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s',
-                TiDropbox.clientId,
+            String.format(
+                url,
+                TiDropbox.APP_KEY,
                 TiDropbox.redirectUri)
         );
         return;
     };
 
 
-    TiDropbox.callMethod = function(methodStr, paramsObj, fileBin, onSuccess_callback, onError_callback, callMethodXhrObj_callback) {
+    TiDropbox.callMethod = function(params) {
 
+        var methodStr, paramsObj, fileBin, onSuccess_callback, onError_callback, callMethodXhrObj_callback;
+        methodStr = params.methodStr;
+        paramsObj = params.paramsObj;
+        fileBin = params.fileBin;
+        onSuccess_callback = params.onSuccessCallback;
+        onError_callback = params.onErrorCallback;
+        callMethodXhrObj_callback = params.callMethodXhrObjCallback;
+        
         var urlEndpoint = dropboxAPIv2[methodStr].uri + "?reject_cors_preflight=true"; //&authorization=Bearer%20"+TiDropbox.ACCESS_TOKEN;
         //urlEndpoint = "https://api.dropboxapi.com/2/files/list_folder?authorization=Bearer%20"+TiDropbox.ACCESS_TOKEN+"&args=%7B%0A%20%20%22path%22%3A%20%22%22%2C%0A%20%20%22recursive%22%3A%20false%2C%0A%20%20%22include_media_info%22%3A%20false%2C%0A%20%20%22include_deleted%22%3A%20false%2C%0A%20%20%22include_has_explicit_shared_members%22%3A%20false%0A%7D&reject_cors_preflight=true";
         Ti.API.debug("\n\n******\ncallMethod: methodStr--> " + methodStr);
@@ -4144,15 +5271,42 @@ var TiDropbox = {};
                 Ti.API.error(JSON.stringify(TiDropbox.xhr.responseText));
                 Ti.API.error(JSON.stringify(TiDropbox.xhr.responseData));
                 var errorMsg = TiDropbox.xhr.statusText + "\n" + e;
-                if(TiDropbox.xhr.responseText){
-                  errorMsg = TiDropbox.xhr.responseText.replace(/\"/g,"'").replace(/\\/g,"'");
-                  //errorMsg = TiDropbox.xhr.statusText + "\n" + errorMsg;
-                }else if(TiDropbox.xhr.responseData){
-                  errorMsg = TiDropbox.xhr.responseData;
-                };
-                if (onError_callback) {
-                    onError_callback(errorMsg);
-                }
+                
+                if (e.code === 401) {
+                     Ti.API.error("TiDropbox ERROR: token expired, try refresh it");
+                     TiDropbox.refreshOauth2Token(function(e){
+                        if (e.success) {                            
+                            TiDropbox.callMethod({
+                                methodStr: "auth/token/revoke",
+                                paramsObj: null,
+                                fileBin: null,
+                                onSuccessCallback: onSuccess_self,
+                                onErrorCallback: onFailed_self,
+                                callMethodXhrObjCallback: callMethodXhrObj_callback
+                            });                            
+                        } else {
+                            if (TiDropbox.xhr.responseText) {
+                                errorMsg = TiDropbox.xhr.responseText.replace(/\"/g, "'").replace(/\\/g, "'");
+                                //errorMsg = TiDropbox.xhr.statusText + "\n" + errorMsg;
+                            } else if (TiDropbox.xhr.responseData) {
+                                errorMsg = TiDropbox.xhr.responseData;
+                            };
+                            if (onError_callback) {
+                                onError_callback(errorMsg);
+                            }
+                        }
+                     })
+                } else {
+                    if (TiDropbox.xhr.responseText) {
+                        errorMsg = TiDropbox.xhr.responseText.replace(/\"/g, "'").replace(/\\/g, "'");
+                        //errorMsg = TiDropbox.xhr.statusText + "\n" + errorMsg;
+                    } else if (TiDropbox.xhr.responseData) {
+                        errorMsg = TiDropbox.xhr.responseData;
+                    };
+                    if (onError_callback) {
+                        onError_callback(errorMsg);
+                    }
+                }                
             };
 
             TiDropbox.xhr.onload = function(_xhr) {
@@ -4240,12 +5394,132 @@ var TiDropbox = {};
         }
     };
 
+    TiDropbox.generateOauth2Token = function (code,generateOauth2Token_callback) {
+        console.log("TiDropbox.generateOauth2Token!!!");
+        var xhr = Titanium.Network.createHTTPClient();
+        var urlEndpoint = "https://api.dropbox.com/oauth2/token?code=" + code +
+                            "&grant_type=authorization_code&redirect_uri=" + TiDropbox.redirectUri + 
+                            "&client_id=" + TiDropbox.APP_KEY + "&client_secret=" + TiDropbox.APP_SECRET;
+        xhr.timeout = 10000;
+        
+        xhr.onload = function (e) {
+            Ti.API.debug("TiDropbox.generateOauth2Token: " + xhr.responseText);
+            var response = JSON.parse(xhr.responseText);
+            var token = response.access_token;
+            var refresh_token = response.refresh_token;
+            
+            TiDropbox.ACCESS_TOKEN = token;
+            Ti.App.Properties.setString('DROPBOX_TOKENS', TiDropbox.ACCESS_TOKEN);
+            Ti.App.Properties.setString('DROPBOX_REFRESH_TOKENS', refresh_token);
+            Ti.API.debug('tidropbox_token: ' + token);
+            Ti.API.debug('tidropbox_refresh_token: ' + refresh_token);
+            console.log(response)
+            if (TiDropbox.auth_callback != undefined) {
+                TiDropbox.auth_callback({
+                    access_token: token,
+                    success: true,
+                    msg: "Ok, you have an access token"
+                });
+            }
+
+            destroyAuthorizeUI();
+        };
+        
+        xhr.onerror = function (e) {
+            console.log(e);
+            Ti.API.error("TiDropbox.generateOauth2Token: " + xhr.responseText);            
+            generateOauth2Token_callback({
+                access_token: null,
+                success: false,
+                msg: "Invalid or expired access token"
+            });
+        };
+
+        console.log(urlEndpoint);
+        xhr.open("POST", urlEndpoint);        
+        
+        var base64encodeString = Ti.Utils.base64encode(TiDropbox.APP_KEY + ":" + TiDropbox.APP_SECRET).toString();
+        console.log(base64encodeString);
+        /*xhr.setRequestHeader(
+            "Authorization",
+            "Basic " + base64encodeString
+        );*/
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.send();        
+    };
+
+    TiDropbox.refreshOauth2Token = function (refreshOauth2Token_callback) {
+        console.log("TiDropbox.refreshOauth2Token!!!");
+        var refresh_token = Ti.App.Properties.getString('DROPBOX_REFRESH_TOKENS',"");
+        var xhr = Titanium.Network.createHTTPClient();
+        var urlEndpoint = "https://api.dropbox.com/oauth2/token?" +
+            "grant_type=refresh_token&refresh_token=" + refresh_token +
+            "&client_id=" + TiDropbox.APP_KEY + "&client_secret=" + TiDropbox.APP_SECRET;
+        xhr.timeout = 10000;
+
+        xhr.onload = function (e) {
+            Ti.API.debug("TiDropbox.refreshOauth2Token: " + xhr.responseText);
+            var response = JSON.parse(xhr.responseText);
+            var token = response.access_token;
+
+            TiDropbox.ACCESS_TOKEN = token;
+            Ti.App.Properties.setString('DROPBOX_TOKENS', TiDropbox.ACCESS_TOKEN);
+            Ti.API.debug('tidropbox_token: ' + token);
+            refreshOauth2Token_callback({
+                success: true,
+                msg: "Ok, you have an access token"
+            });
+            if (TiDropbox.auth_callback != undefined) {
+                TiDropbox.auth_callback({
+                    access_token: token,
+                    success: true,
+                    msg: "Ok, you have an access token"
+                });
+            }            
+        };
+
+        xhr.onerror = function (e) {
+            console.log(e);
+            Ti.API.error("TiDropbox.refreshOauth2Token: " + xhr.responseText);
+
+            // Can't refresh token, so try login again
+            TiDropbox.generateAuthUrl(function (e) {
+                Ti.API.debug("generateAuthUrl checkins response-> " + JSON.stringify(e));
+                if (e.success) {
+                    refreshOauth2Token_callback({
+                        success: true,
+                        msg: "Ok, you have an access token"
+                    });
+                } else {
+                    Ti.App.Properties.setString('DROPBOX_TOKENS', null);
+                    Ti.App.Properties.setString('DROPBOX_REFRESH_TOKENS', null);
+                    refreshOauth2Token_callback({
+                        success: false,
+                        msg: "Invalid or expired access token"
+                    });
+                }
+            });
+        };
+
+        console.log(urlEndpoint);
+        xhr.open("POST", urlEndpoint);
+
+        /*xhr.setRequestHeader(
+            "Authorization",
+            "Basic " + Ti.Utils.base64encode(TiDropbox.APP_KEY + ":" + TiDropbox.APP_SECRET)
+        );*/
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.send();
+    };
+
 
     /**
      * code to display the familiar web login dialog we all know and love
      */
     function showAuthorizeUI(pUrl) {
-        window = Ti.UI.createWindow({
+        /*window = Ti.UI.createWindow({
             top: (OS_IOS) ? "20dp" : "0dp",
             //modal: true,
             //fullscreen: true,
@@ -4295,6 +5569,7 @@ var TiDropbox = {};
             autoDetect: [Ti.UI.AUTODETECT_NONE],
             ignoreSslError : true
         });
+        
         Ti.API.debug('Setting:[' + Ti.UI.AUTODETECT_NONE + ']');
         webView.addEventListener('beforeload',
             function(e) {
@@ -4304,19 +5579,15 @@ var TiDropbox = {};
                     webView.stopLoading = true;
                 }
             });
-        webView.addEventListener('load', authorizeUICallback);
-        view.add(webView);
-
-        closeLabel.addEventListener('click', function(){
-          if (TiDropbox.auth_callback != undefined) {
-              TiDropbox.auth_callback({
-                  access_token: null,
-                  success : false,
-                  msg : "No access token... try again"
-              });
-          }
-          destroyAuthorizeUI();
-        });
+        if (OS_IOS) {
+            webView.addEventListener('load', authorizeUICallback);
+        } else {
+            webView.addEventListener('open', authorizeUICallback);
+        }
+        webView.addEventListener('close', closeAuthorizeUI);
+        view.add(webView);                
+        
+        closeLabel.addEventListener('click', closeAuthorizeUI);
         window.add(closeLabel);
 
         window.add(view);
@@ -4326,28 +5597,199 @@ var TiDropbox = {};
         animation.duration = 500;
         setTimeout(function(){
           view.animate(animation);
-        },OS_IOS ? 10 : 1000);
+        },OS_IOS ? 10 : 1000);*/
+
+        webView = require('ti.webdialog');
+        if (OS_IOS) {
+
+            webView.open({
+                url: pUrl + "&callbackURL=" + TiDropbox.app_mime_scheme + "://", //'https://example.com/oauth?callbackURL=myapp://'
+            });
+
+            Ti.App.iOS.addEventListener('handleurl', handleurl);
+            webView.addEventListener('close', iOSwebViewOnCloseCallback);
+            return;
+
+            var authSession = webView.createAuthenticationSession({
+                url: pUrl + "&callbackURL=" + TiDropbox.app_mime_scheme + "://", //'https://example.com/oauth?callbackURL=myapp://',
+                scheme: TiDropbox.app_mime_scheme
+            });
+
+            authSession.addEventListener('callback', function (e) {
+                console.log("authSession callback");
+                console.log(e);
+                if (!e.success) {
+                    Ti.API.error('Error authenticating: ' + e.error);
+                    closeAuthorizeUI();
+                    return;
+                }
+                Ti.API.info('Callback URL: ' + e.callbackURL);
+
+                if (TiDropbox.response_type === "code") {
+                    var code = e.callbackURL.match(/dropbox_token\?([^&]*)/)[1];
+                    //  Adesso dovrei richiedere il token con l'api /oauth2/token
+                    TiDropbox.generateOauth2Token(code, function (e) {
+                        console.log("TiDropbox.generateOauth2Token callback");
+                        console.log(e);
+                        if (!e.success) {
+                            Ti.API.error('Error authenticating: ' + e.error);
+                            closeAuthorizeUI();
+                            return;
+                        } else {
+                            authorizeUICallback({
+                                url: e.callbackURL
+                            })
+                        }
+                    })
+                } else {
+                    authorizeUICallback({
+                        url: e.callbackURL
+                    })
+                }
+            });
+
+            authSession.start(); // Or cancel() to cancel it manually.
+        } else {
+            webView.open({
+                url: pUrl + "&callbackURL=" + TiDropbox.app_mime_scheme
+            });
+
+            //Ti.App.addEventListener("resumed", androidDeepLink);
+            webView.addEventListener('close', androidWebViewOnCloseCallback);
+        }
     };
 
+    function iOSwebViewOnCloseCallback() {
+        Ti.API.debug("TiDropbox iOSwebViewOnCloseCallback");
+        Ti.App.iOS.fireEvent('handleurl');
+    };
 
+    function androidWebViewOnCloseCallback() {
+        Ti.API.debug("TiDropbox androidWebViewOnCloseCallback");
+        //Ti.App.addEventListener("resumed", resumed);
+    };
+
+    var handleurlCalled = false;   
+    function handleurl(e) {       
+        // check if it's alredy trigged to avoid double call
+        if (handleurlCalled) {
+            console.warn("TiDropbox: handleurl already trigged!")  
+            return;
+        }
+        handleurlCalled =  true;
+        setTimeout(() => {
+            handleurlCalled = false;
+        }, 1000);
+
+        Ti.API.debug('handleurl');
+        console.log(e);
+
+        if (webView.isOpen()) {
+            webView.close();
+        }
+
+        var callbackURL;
+        try {
+            callbackURL = e.launchOptions.url;
+        } catch (error) {
+            callbackURL = null;
+        }
+
+        if (!callbackURL) {
+            Ti.API.error('Error handleurl: no callbackURL');
+            closeAuthorizeUI();
+            return;
+        }
+        Ti.API.info('Callback URL: ' + callbackURL);
+        useCallbackURL(callbackURL);
+    }
+
+    function useCallbackURL(callbackURL) {
+        if (TiDropbox.response_type === "code") {
+            var code = callbackURL.match(/dropbox_token\?([^&]*)/)[1];
+            //  Adesso dovrei richiedere il token con l'api /oauth2/token
+            TiDropbox.generateOauth2Token(code, function (e) {
+                console.log("TiDropbox.generateOauth2Token callback");
+                console.log(e);
+                if (!e.success) {
+                    Ti.API.error('Error authenticating: ' + e.error);
+                    closeAuthorizeUI();
+                    return;
+                } else {
+                    authorizeUICallback({
+                        url: callbackURL
+                    })
+                }
+            })
+        } else {
+            authorizeUICallback({
+                url: callbackURL
+            })
+        }
+    }
+
+    function closeAuthorizeUI() {
+        if (TiDropbox.auth_callback != undefined) {
+            TiDropbox.auth_callback({
+                access_token: null,
+                success: false,
+                msg: "No access token... try again"
+            });
+        }
+        destroyAuthorizeUI();
+    }
+
+    function androidDeepLink(e) {
+        console.log("androidDeepLink intent data --->");
+        console.log(e);
+        console.log("<--- androidDeepLink intent data");
+        var callbackURL = e.data;
+
+        
+       
+        if (callbackURL && callbackURL.indexOf(TiDropbox.app_mime_scheme) > -1) {
+            useCallbackURL(callbackURL);
+            return;
+            var currIntent = Titanium.Android.currentActivity.intent;
+            if (currIntent.hasExtra("dropbox_token")) {
+                console.log('currIntent.hasExtras("data")');
+                //var notifData = currIntent.getStringExtra("fcm_data");
+                currIntent.putExtra("data", null);
+            } else {
+                console.log('currIntent has NOT Extras ("data")');
+            }
+            Titanium.Android.currentActivity.intent.data = null;
+        } else {
+            Ti.API.error('Error androidDeepLink: no callbackURL');
+            closeAuthorizeUI();
+            return;
+        }
+    }
 
     /**
      * unloads the UI used to have the user authorize the application
      */
     function destroyAuthorizeUI() {
-        Ti.API.debug('destroyAuthorizeUI');
-        // if the window doesn't exist, exit
-        if (window == null) {
-            return;
-        }
-
+        Ti.API.debug('destroyAuthorizeUI');        
         // remove the UI
         try {
-            Ti.API.debug('destroyAuthorizeUI:webView.removeEventListener');
-            webView.removeEventListener('load', authorizeUICallback);
-            Ti.API.debug('destroyAuthorizeUI:window.close()');
-            window.close();
+            Ti.API.debug('destroyAuthorizeUI: webView.removeEventListener');
+            if (OS_IOS) {
+                Ti.API.debug('destroyAuthorizeUI: Ti.App.iOS.handleurl.removeEventListener');
+                Ti.App.iOS.removeEventListener('handleurl', handleurl);
+                webView.removeEventListener('close', iOSwebViewOnCloseCallback);
+            } else {  
+                Ti.API.debug('destroyAuthorizeUI: Ti.App.removeEventListener resumed');
+                //Ti.App.removeEventListener("resumed", androidDeepLink);
+                webView.removeEventListener('close', androidWebViewOnCloseCallback);
+            }
+            //Ti.API.debug('destroyAuthorizeUI: window.close()');
+            //window.close();
+            if (webView.isOpen()) {
+                webView.close();
+            }            
         } catch (ex) {
+            console.error(ex);
             Ti.API.debug('Cannot destroy the authorize UI. Ignoring.');
         }
     };
@@ -4417,7 +5859,6 @@ var TiDropbox = {};
 })();
 
 exports.TiDropbox = TiDropbox;
-
-}).call(this,require("--timers--").setTimeout)
-},{"--timers--":2,"../lib/dropboxAPIv2":3}]},{},[4])(4)
+}).call(this,require("--console--"),require("--timers--").setTimeout)
+},{"--console--":9,"--timers--":3,"../lib/dropboxAPIv2":13}]},{},[14])(14)
 });

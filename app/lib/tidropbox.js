@@ -21,29 +21,48 @@ var TiDropbox = {};
 
 (function() {
 
-    var window;
+    var webView, Deeply;
     var dropboxAPIv2 = require("../lib/dropboxAPIv2").dropboxAPIv2;
     var OS_IOS = (Ti.Platform.osname != "android");
     var OS_ANDROID = !OS_IOS;
+    if (OS_ANDROID) {
+        Deeply = require('ti.deeply');
+        Deeply.setCallback(function (e) {
+            Ti.API.debug('Deep link called');            
+            androidDeepLink(e);
+        });
+    }
 
-    TiDropbox.init = function(clientId, redirectUri) {
-        TiDropbox.clientId = clientId;
-        TiDropbox.redirectUri = redirectUri;
+    TiDropbox.init = function(params) {
+        TiDropbox.APP_KEY = params.APP_KEY;
+        TiDropbox.APP_SECRET = params.APP_SECRET;
+        TiDropbox.redirectUri = params.redirectUri;
+        TiDropbox.response_type = params.response_type || "code"; // "token" or "code"
+        TiDropbox.app_mime_scheme = params.app_mime_scheme;
         TiDropbox.ACCESS_TOKEN = Ti.App.Properties.getString('DROPBOX_TOKENS',null);
+        TiDropbox.ACCESS_REFRESH_TOKEN = Ti.App.Properties.getString('DROPBOX_REFRESH_TOKENS', null);
         TiDropbox.xhr = null;
         TiDropbox.API_URL = "https://api.dropboxapi.com/2/";
     };
 
     TiDropbox.revokeAccessToken = function(revokeAuth_callback) {
-        TiDropbox.callMethod("auth/token/revoke", null, null, onSuccess_self, onFailed_self);
+        TiDropbox.callMethod({
+            methodStr: "auth/token/revoke",
+            paramsObj: null,
+            fileBin: null,
+            onSuccessCallback: onSuccess_self,
+            onErrorCallback: onFailed_self
+        });
+
+        Ti.App.Properties.setString('DROPBOX_TOKENS', null);
+        Ti.App.Properties.setString('DROPBOX_REFRESH_TOKENS', null);
 
         function onSuccess_self() {
             /*Titanium.UI.createAlertDialog({
                 title: "auth/token/revoke",
                 message: "LOGOUT SUCCESS",
                 buttonNames: ['OK']
-            }).show();*/
-            Ti.App.Properties.setString('DROPBOX_TOKENS',null);
+            }).show();*/           
             revokeAuth_callback({
                 access_token: null,
                 success : true,
@@ -56,10 +75,7 @@ var TiDropbox = {};
                 title: "auth/token/revoke",
                 message: JSON.stringify(e),
                 buttonNames: ['OK']
-            }).show();*/
-            //if(JSON.stringify(e).indexOf("invalid_access_token")!=-1){
-              Ti.App.Properties.setString('DROPBOX_TOKENS',null);
-            //};
+            }).show();*/            
             revokeAuth_callback({
                 access_token: null,
                 success : false,
@@ -73,13 +89,14 @@ var TiDropbox = {};
       		var searchKey = path.search('Documents');
       		path = path.substring(0, searchKey);
       		path = path + 'Library/Cookies/';
+            //path = path + 'SystemData/com.apple.SafariViewService/Library/Cookies';// + Ti.App.id;
       		var f = Ti.Filesystem.getFile(path);
       		Ti.API.debug("cookie path ---> " + path);
       		Ti.API.debug("cookie path exists() ---> " + f.exists());
       		if(f.exists()){
       			f.deleteDirectory(true);
       		};
-      		f=null;
+      		f=null;            
       	}else if(OS_ANDROID){
       		Ti.Network.removeAllSystemCookies();
       	};
@@ -107,17 +124,32 @@ var TiDropbox = {};
           return;
         };
 
+        var url;
+        if (TiDropbox.response_type === "code") {
+            url = 'https://www.dropbox.com/oauth2/authorize?response_type=code&token_access_type=offline&client_id=%s&redirect_uri=%s&force_reauthentication=true';
+        } else {
+            url = 'https://www.dropbox.com/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s&force_reauthentication=true';
+        }
         showAuthorizeUI(
-            String.format('https://www.dropbox.com/oauth2/authorize?response_type=token&client_id=%s&redirect_uri=%s',
-                TiDropbox.clientId,
+            String.format(
+                url,
+                TiDropbox.APP_KEY,
                 TiDropbox.redirectUri)
         );
         return;
     };
 
 
-    TiDropbox.callMethod = function(methodStr, paramsObj, fileBin, onSuccess_callback, onError_callback, callMethodXhrObj_callback) {
+    TiDropbox.callMethod = function(params) {
 
+        var methodStr, paramsObj, fileBin, onSuccess_callback, onError_callback, callMethodXhrObj_callback;
+        methodStr = params.methodStr;
+        paramsObj = params.paramsObj;
+        fileBin = params.fileBin;
+        onSuccess_callback = params.onSuccessCallback;
+        onError_callback = params.onErrorCallback;
+        callMethodXhrObj_callback = params.callMethodXhrObjCallback;
+        
         var urlEndpoint = dropboxAPIv2[methodStr].uri + "?reject_cors_preflight=true"; //&authorization=Bearer%20"+TiDropbox.ACCESS_TOKEN;
         //urlEndpoint = "https://api.dropboxapi.com/2/files/list_folder?authorization=Bearer%20"+TiDropbox.ACCESS_TOKEN+"&args=%7B%0A%20%20%22path%22%3A%20%22%22%2C%0A%20%20%22recursive%22%3A%20false%2C%0A%20%20%22include_media_info%22%3A%20false%2C%0A%20%20%22include_deleted%22%3A%20false%2C%0A%20%20%22include_has_explicit_shared_members%22%3A%20false%0A%7D&reject_cors_preflight=true";
         Ti.API.debug("\n\n******\ncallMethod: methodStr--> " + methodStr);
@@ -137,15 +169,42 @@ var TiDropbox = {};
                 Ti.API.error(JSON.stringify(TiDropbox.xhr.responseText));
                 Ti.API.error(JSON.stringify(TiDropbox.xhr.responseData));
                 var errorMsg = TiDropbox.xhr.statusText + "\n" + e;
-                if(TiDropbox.xhr.responseText){
-                  errorMsg = TiDropbox.xhr.responseText.replace(/\"/g,"'").replace(/\\/g,"'");
-                  //errorMsg = TiDropbox.xhr.statusText + "\n" + errorMsg;
-                }else if(TiDropbox.xhr.responseData){
-                  errorMsg = TiDropbox.xhr.responseData;
-                };
-                if (onError_callback) {
-                    onError_callback(errorMsg);
-                }
+                
+                if (e.code === 401) {
+                     Ti.API.error("TiDropbox ERROR: token expired, try refresh it");
+                     TiDropbox.refreshOauth2Token(function(e){
+                        if (e.success) {                            
+                            TiDropbox.callMethod({
+                                methodStr: "auth/token/revoke",
+                                paramsObj: null,
+                                fileBin: null,
+                                onSuccessCallback: onSuccess_self,
+                                onErrorCallback: onFailed_self,
+                                callMethodXhrObjCallback: callMethodXhrObj_callback
+                            });                            
+                        } else {
+                            if (TiDropbox.xhr.responseText) {
+                                errorMsg = TiDropbox.xhr.responseText.replace(/\"/g, "'").replace(/\\/g, "'");
+                                //errorMsg = TiDropbox.xhr.statusText + "\n" + errorMsg;
+                            } else if (TiDropbox.xhr.responseData) {
+                                errorMsg = TiDropbox.xhr.responseData;
+                            };
+                            if (onError_callback) {
+                                onError_callback(errorMsg);
+                            }
+                        }
+                     })
+                } else {
+                    if (TiDropbox.xhr.responseText) {
+                        errorMsg = TiDropbox.xhr.responseText.replace(/\"/g, "'").replace(/\\/g, "'");
+                        //errorMsg = TiDropbox.xhr.statusText + "\n" + errorMsg;
+                    } else if (TiDropbox.xhr.responseData) {
+                        errorMsg = TiDropbox.xhr.responseData;
+                    };
+                    if (onError_callback) {
+                        onError_callback(errorMsg);
+                    }
+                }                
             };
 
             TiDropbox.xhr.onload = function(_xhr) {
@@ -233,12 +292,132 @@ var TiDropbox = {};
         }
     };
 
+    TiDropbox.generateOauth2Token = function (code,generateOauth2Token_callback) {
+        console.log("TiDropbox.generateOauth2Token!!!");
+        var xhr = Titanium.Network.createHTTPClient();
+        var urlEndpoint = "https://api.dropbox.com/oauth2/token?code=" + code +
+                            "&grant_type=authorization_code&redirect_uri=" + TiDropbox.redirectUri + 
+                            "&client_id=" + TiDropbox.APP_KEY + "&client_secret=" + TiDropbox.APP_SECRET;
+        xhr.timeout = 10000;
+        
+        xhr.onload = function (e) {
+            Ti.API.debug("TiDropbox.generateOauth2Token: " + xhr.responseText);
+            var response = JSON.parse(xhr.responseText);
+            var token = response.access_token;
+            var refresh_token = response.refresh_token;
+            
+            TiDropbox.ACCESS_TOKEN = token;
+            Ti.App.Properties.setString('DROPBOX_TOKENS', TiDropbox.ACCESS_TOKEN);
+            Ti.App.Properties.setString('DROPBOX_REFRESH_TOKENS', refresh_token);
+            Ti.API.debug('tidropbox_token: ' + token);
+            Ti.API.debug('tidropbox_refresh_token: ' + refresh_token);
+            console.log(response)
+            if (TiDropbox.auth_callback != undefined) {
+                TiDropbox.auth_callback({
+                    access_token: token,
+                    success: true,
+                    msg: "Ok, you have an access token"
+                });
+            }
+
+            destroyAuthorizeUI();
+        };
+        
+        xhr.onerror = function (e) {
+            console.log(e);
+            Ti.API.error("TiDropbox.generateOauth2Token: " + xhr.responseText);            
+            generateOauth2Token_callback({
+                access_token: null,
+                success: false,
+                msg: "Invalid or expired access token"
+            });
+        };
+
+        console.log(urlEndpoint);
+        xhr.open("POST", urlEndpoint);        
+        
+        var base64encodeString = Ti.Utils.base64encode(TiDropbox.APP_KEY + ":" + TiDropbox.APP_SECRET).toString();
+        console.log(base64encodeString);
+        /*xhr.setRequestHeader(
+            "Authorization",
+            "Basic " + base64encodeString
+        );*/
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.send();        
+    };
+
+    TiDropbox.refreshOauth2Token = function (refreshOauth2Token_callback) {
+        console.log("TiDropbox.refreshOauth2Token!!!");
+        var refresh_token = Ti.App.Properties.getString('DROPBOX_REFRESH_TOKENS',"");
+        var xhr = Titanium.Network.createHTTPClient();
+        var urlEndpoint = "https://api.dropbox.com/oauth2/token?" +
+            "grant_type=refresh_token&refresh_token=" + refresh_token +
+            "&client_id=" + TiDropbox.APP_KEY + "&client_secret=" + TiDropbox.APP_SECRET;
+        xhr.timeout = 10000;
+
+        xhr.onload = function (e) {
+            Ti.API.debug("TiDropbox.refreshOauth2Token: " + xhr.responseText);
+            var response = JSON.parse(xhr.responseText);
+            var token = response.access_token;
+
+            TiDropbox.ACCESS_TOKEN = token;
+            Ti.App.Properties.setString('DROPBOX_TOKENS', TiDropbox.ACCESS_TOKEN);
+            Ti.API.debug('tidropbox_token: ' + token);
+            refreshOauth2Token_callback({
+                success: true,
+                msg: "Ok, you have an access token"
+            });
+            if (TiDropbox.auth_callback != undefined) {
+                TiDropbox.auth_callback({
+                    access_token: token,
+                    success: true,
+                    msg: "Ok, you have an access token"
+                });
+            }            
+        };
+
+        xhr.onerror = function (e) {
+            console.log(e);
+            Ti.API.error("TiDropbox.refreshOauth2Token: " + xhr.responseText);
+
+            // Can't refresh token, so try login again
+            TiDropbox.generateAuthUrl(function (e) {
+                Ti.API.debug("generateAuthUrl checkins response-> " + JSON.stringify(e));
+                if (e.success) {
+                    refreshOauth2Token_callback({
+                        success: true,
+                        msg: "Ok, you have an access token"
+                    });
+                } else {
+                    Ti.App.Properties.setString('DROPBOX_TOKENS', null);
+                    Ti.App.Properties.setString('DROPBOX_REFRESH_TOKENS', null);
+                    refreshOauth2Token_callback({
+                        success: false,
+                        msg: "Invalid or expired access token"
+                    });
+                }
+            });
+        };
+
+        console.log(urlEndpoint);
+        xhr.open("POST", urlEndpoint);
+
+        /*xhr.setRequestHeader(
+            "Authorization",
+            "Basic " + Ti.Utils.base64encode(TiDropbox.APP_KEY + ":" + TiDropbox.APP_SECRET)
+        );*/
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.send();
+    };
+
 
     /**
      * code to display the familiar web login dialog we all know and love
      */
     function showAuthorizeUI(pUrl) {
-        window = Ti.UI.createWindow({
+        /*window = Ti.UI.createWindow({
             top: (OS_IOS) ? "20dp" : "0dp",
             //modal: true,
             //fullscreen: true,
@@ -288,6 +467,7 @@ var TiDropbox = {};
             autoDetect: [Ti.UI.AUTODETECT_NONE],
             ignoreSslError : true
         });
+        
         Ti.API.debug('Setting:[' + Ti.UI.AUTODETECT_NONE + ']');
         webView.addEventListener('beforeload',
             function(e) {
@@ -297,19 +477,15 @@ var TiDropbox = {};
                     webView.stopLoading = true;
                 }
             });
-        webView.addEventListener('load', authorizeUICallback);
-        view.add(webView);
-
-        closeLabel.addEventListener('click', function(){
-          if (TiDropbox.auth_callback != undefined) {
-              TiDropbox.auth_callback({
-                  access_token: null,
-                  success : false,
-                  msg : "No access token... try again"
-              });
-          }
-          destroyAuthorizeUI();
-        });
+        if (OS_IOS) {
+            webView.addEventListener('load', authorizeUICallback);
+        } else {
+            webView.addEventListener('open', authorizeUICallback);
+        }
+        webView.addEventListener('close', closeAuthorizeUI);
+        view.add(webView);                
+        
+        closeLabel.addEventListener('click', closeAuthorizeUI);
         window.add(closeLabel);
 
         window.add(view);
@@ -319,28 +495,199 @@ var TiDropbox = {};
         animation.duration = 500;
         setTimeout(function(){
           view.animate(animation);
-        },OS_IOS ? 10 : 1000);
+        },OS_IOS ? 10 : 1000);*/
+
+        webView = require('ti.webdialog');
+        if (OS_IOS) {
+
+            webView.open({
+                url: pUrl + "&callbackURL=" + TiDropbox.app_mime_scheme + "://", //'https://example.com/oauth?callbackURL=myapp://'
+            });
+
+            Ti.App.iOS.addEventListener('handleurl', handleurl);
+            webView.addEventListener('close', iOSwebViewOnCloseCallback);
+            return;
+
+            var authSession = webView.createAuthenticationSession({
+                url: pUrl + "&callbackURL=" + TiDropbox.app_mime_scheme + "://", //'https://example.com/oauth?callbackURL=myapp://',
+                scheme: TiDropbox.app_mime_scheme
+            });
+
+            authSession.addEventListener('callback', function (e) {
+                console.log("authSession callback");
+                console.log(e);
+                if (!e.success) {
+                    Ti.API.error('Error authenticating: ' + e.error);
+                    closeAuthorizeUI();
+                    return;
+                }
+                Ti.API.info('Callback URL: ' + e.callbackURL);
+
+                if (TiDropbox.response_type === "code") {
+                    var code = e.callbackURL.match(/dropbox_token\?([^&]*)/)[1];
+                    //  Adesso dovrei richiedere il token con l'api /oauth2/token
+                    TiDropbox.generateOauth2Token(code, function (e) {
+                        console.log("TiDropbox.generateOauth2Token callback");
+                        console.log(e);
+                        if (!e.success) {
+                            Ti.API.error('Error authenticating: ' + e.error);
+                            closeAuthorizeUI();
+                            return;
+                        } else {
+                            authorizeUICallback({
+                                url: e.callbackURL
+                            })
+                        }
+                    })
+                } else {
+                    authorizeUICallback({
+                        url: e.callbackURL
+                    })
+                }
+            });
+
+            authSession.start(); // Or cancel() to cancel it manually.
+        } else {
+            webView.open({
+                url: pUrl + "&callbackURL=" + TiDropbox.app_mime_scheme
+            });
+
+            //Ti.App.addEventListener("resumed", androidDeepLink);
+            webView.addEventListener('close', androidWebViewOnCloseCallback);
+        }
     };
 
+    function iOSwebViewOnCloseCallback() {
+        Ti.API.debug("TiDropbox iOSwebViewOnCloseCallback");
+        Ti.App.iOS.fireEvent('handleurl');
+    };
 
+    function androidWebViewOnCloseCallback() {
+        Ti.API.debug("TiDropbox androidWebViewOnCloseCallback");
+        //Ti.App.addEventListener("resumed", resumed);
+    };
+
+    var handleurlCalled = false;   
+    function handleurl(e) {       
+        // check if it's alredy trigged to avoid double call
+        if (handleurlCalled) {
+            console.warn("TiDropbox: handleurl already trigged!")  
+            return;
+        }
+        handleurlCalled =  true;
+        setTimeout(() => {
+            handleurlCalled = false;
+        }, 1000);
+
+        Ti.API.debug('handleurl');
+        console.log(e);
+
+        if (webView.isOpen()) {
+            webView.close();
+        }
+
+        var callbackURL;
+        try {
+            callbackURL = e.launchOptions.url;
+        } catch (error) {
+            callbackURL = null;
+        }
+
+        if (!callbackURL) {
+            Ti.API.error('Error handleurl: no callbackURL');
+            closeAuthorizeUI();
+            return;
+        }
+        Ti.API.info('Callback URL: ' + callbackURL);
+        useCallbackURL(callbackURL);
+    }
+
+    function useCallbackURL(callbackURL) {
+        if (TiDropbox.response_type === "code") {
+            var code = callbackURL.match(/dropbox_token\?([^&]*)/)[1];
+            //  Adesso dovrei richiedere il token con l'api /oauth2/token
+            TiDropbox.generateOauth2Token(code, function (e) {
+                console.log("TiDropbox.generateOauth2Token callback");
+                console.log(e);
+                if (!e.success) {
+                    Ti.API.error('Error authenticating: ' + e.error);
+                    closeAuthorizeUI();
+                    return;
+                } else {
+                    authorizeUICallback({
+                        url: callbackURL
+                    })
+                }
+            })
+        } else {
+            authorizeUICallback({
+                url: callbackURL
+            })
+        }
+    }
+
+    function closeAuthorizeUI() {
+        if (TiDropbox.auth_callback != undefined) {
+            TiDropbox.auth_callback({
+                access_token: null,
+                success: false,
+                msg: "No access token... try again"
+            });
+        }
+        destroyAuthorizeUI();
+    }
+
+    function androidDeepLink(e) {
+        console.log("androidDeepLink intent data --->");
+        console.log(e);
+        console.log("<--- androidDeepLink intent data");
+        var callbackURL = e.data;
+
+        
+       
+        if (callbackURL && callbackURL.indexOf(TiDropbox.app_mime_scheme) > -1) {
+            useCallbackURL(callbackURL);
+            return;
+            var currIntent = Titanium.Android.currentActivity.intent;
+            if (currIntent.hasExtra("dropbox_token")) {
+                console.log('currIntent.hasExtras("data")');
+                //var notifData = currIntent.getStringExtra("fcm_data");
+                currIntent.putExtra("data", null);
+            } else {
+                console.log('currIntent has NOT Extras ("data")');
+            }
+            Titanium.Android.currentActivity.intent.data = null;
+        } else {
+            Ti.API.error('Error androidDeepLink: no callbackURL');
+            closeAuthorizeUI();
+            return;
+        }
+    }
 
     /**
      * unloads the UI used to have the user authorize the application
      */
     function destroyAuthorizeUI() {
-        Ti.API.debug('destroyAuthorizeUI');
-        // if the window doesn't exist, exit
-        if (window == null) {
-            return;
-        }
-
+        Ti.API.debug('destroyAuthorizeUI');        
         // remove the UI
         try {
-            Ti.API.debug('destroyAuthorizeUI:webView.removeEventListener');
-            webView.removeEventListener('load', authorizeUICallback);
-            Ti.API.debug('destroyAuthorizeUI:window.close()');
-            window.close();
+            Ti.API.debug('destroyAuthorizeUI: webView.removeEventListener');
+            if (OS_IOS) {
+                Ti.API.debug('destroyAuthorizeUI: Ti.App.iOS.handleurl.removeEventListener');
+                Ti.App.iOS.removeEventListener('handleurl', handleurl);
+                webView.removeEventListener('close', iOSwebViewOnCloseCallback);
+            } else {  
+                Ti.API.debug('destroyAuthorizeUI: Ti.App.removeEventListener resumed');
+                //Ti.App.removeEventListener("resumed", androidDeepLink);
+                webView.removeEventListener('close', androidWebViewOnCloseCallback);
+            }
+            //Ti.API.debug('destroyAuthorizeUI: window.close()');
+            //window.close();
+            if (webView.isOpen()) {
+                webView.close();
+            }            
         } catch (ex) {
+            console.error(ex);
             Ti.API.debug('Cannot destroy the authorize UI. Ignoring.');
         }
     };

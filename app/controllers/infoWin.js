@@ -93,5 +93,5 @@ function closeWin(e){
 }
 
 function onLoad(e){
-  $.wv.setScalesPageToFit(true);
+  $.wv.scalesPageToFit = true;
 }

@@ -1,5 +1,12 @@
 var TiDropbox = require("ti.dropbox").TiDropbox;
-TiDropbox.init('e9tribefg77q4wg'/*<YOUR APP KEY HERE>*/, 'https://astrovicapps.com/'/*<YOUR redirect_uri HERE>*/);
+
+TiDropbox.init({
+  APP_KEY: 'e9tribefg77q4wg', /*<YOUR APP KEY HERE>*/
+  APP_SECRET: 'dkrhmji4z14k2wf', /*<YOUR APP SECRET HERE>*/
+  redirectUri: 'https://astrovicapps.com/_apptest/tidropbox_cb.html', /*<YOUR OAuth2 Redirect URI SET TO DROPBOX APP CONSOLE>*/
+  response_type: "code", // "token" or "code". Token flow expires after 4 hours!
+  app_mime_scheme: "tidropbox" // *<YOUR APP MIME SCHEME HERE SET TO TIAPP.XML>*/
+});
 
 var dropboxAPIv2 = require("dropboxAPIv2").dropboxAPIv2;
 var selectedMethod = "";
@@ -66,7 +73,7 @@ function checkToken(){
     $.apiListTV.show();
   }else{
     $.loginBtn.logged = false;
-    $.loginBtntitle = "Dropbox Login";
+    $.loginBtn.title = "Dropbox Login";
     $.apiListTV.hide();
   };
   $.activityBgView.hide();
@@ -176,7 +183,18 @@ function callMethod(e){
     }else{
       var blob = null;
     };
-    TiDropbox.callMethod(selectedMethod, params, blob, onSuccessCallback, onErrorCallback);
+    TiDropbox.callMethod({
+      methodStr: selectedMethod,
+      paramsObj: params,
+      fileBin: blob,
+      onSuccessCallback: onSuccessCallback,
+      onErrorCallback: onErrorCallback,
+      callMethodXhrObjCallback: function(e) {
+        console.log("/////// current TiDropbox.xhr object //////////");
+        console.log(e);
+        console.log("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
+      }
+    });
   }else if(e.source.text === "Info"){
     Alloy.createController('infoWin',{method : dropboxAPIv2[selectedMethod], selectedMethod : selectedMethod}).getView().open();
   };
@@ -309,7 +327,13 @@ function createTest(){
     i++;
     if(testFiles[i]){
       $.activityLbl.text = testFiles[i].methodStr + "\n" + testFiles[i].testParams.path;
-      TiDropbox.callMethod(testFiles[i].methodStr, testFiles[i].testParams, testFiles[i].blob, onSuccess, onError);
+      TiDropbox.callMethod({
+        methodStr: testFiles[i].methodStr,
+        paramsObj: testFiles[i].testParams,
+        fileBin: testFiles[i].blob,
+        onSuccessCallback: onSuccess,
+        onErrorCallback: onError
+      });
     }else{
       $.activityLbl.text = "DONE :)";
       setTimeout(function(){

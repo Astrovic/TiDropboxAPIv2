@@ -1,7 +1,8 @@
 ".container": {
   top: "0dp",
   width: '100%',
-  backgroundColor: "rgb(255,255,255,0.5)"
+  backgroundColor: "rgb(255,255,255,0.5)",
+  extendSafeArea: false
 }
 
 ".container[platform=ios]": {

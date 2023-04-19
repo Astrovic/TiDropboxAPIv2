@@ -43,11 +43,34 @@
         <key>UIStatusBarStyle</key>
         <string>UIStatusBarStyleDefault</string>
       </dict>
+      <key>UTExportedTypeDeclarations</key>
+      	<array>
+      		<dict>      			
+      			<key>UTTypeTagSpecification</key>
+      			<dict>
+      				<key>public.mime-type</key>
+      				<string>tidropbox</string>
+      			</dict>
+      		</dict>
+      	</array>
     </plist>
   </ios>
-  <android
-    xmlns:android="http://schemas.android.com/apk/res/android">
-  </android>
+  <android xmlns:android="http://schemas.android.com/apk/res/android">
+		<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1">
+			<application>				
+        <activity android:name="ti.deeply.DeepLinkHandlerActivity" android:exported="true" 
+                  android:noHistory="true" android:excludeFromRecents="true" android:launchMode="singleTask">
+					<intent-filter>
+						<action android:name="android.intent.action.VIEW"/>
+						<category android:name="android.intent.category.DEFAULT"/>
+						<category android:name="android.intent.category.BROWSABLE"/>
+						<data android:scheme="tidropbox" android:host="dropbox_token" />
+					</intent-filter>
+					<!-- and all the other intent filters you want to declare -->
+				</activity>
+			</application>
+		</manifest>
+	</android>
   <mobileweb>
     <precache></precache>
     <splash>
@@ -57,8 +80,10 @@
     <theme>default</theme>
   </mobileweb>
   <modules>
-    <module platform="commonjs" version="4.1.0">ti.dropbox</module>
+    <module platform="commonjs" version="6.0.0">ti.dropbox</module>
     <module platform="iphone" version="0.2">com.mobmaxime.TiWebview</module>
+    <module>ti.webdialog</module>
+    <module platform="android" version="3.0.0">ti.deeply</module>
   </modules>
   <deployment-targets>
     <target device="android">true</target>
@@ -67,7 +92,7 @@
     <target device="mobileweb">true</target>
     <target device="windows">true</target>
   </deployment-targets>
-  <sdk-version>10.1.1.GA</sdk-version>
+  <sdk-version>11.1.1.GA</sdk-version>
   <plugins>
     <plugin version="1.0">ti.alloy</plugin>
   </plugins>
