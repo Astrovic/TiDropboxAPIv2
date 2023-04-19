@@ -82,7 +82,7 @@ You can use the contents of my **tidropbox_cb.html** file. You just need to repl
 
 ## tiapp.xml
 The login flow to obtain the token requires the use of the system browser. In order to get back to the app, you need to add an activity to your android manifest, which will be used by the **ti.deeply** module, and a public.mime-type string on iOS.
-iOS `public.mime-type` key string,Android `android:scheme` value and `app_mime_scheme`value must be the ones you use in the **tidropbox_cb.html** redirect URI file:
+iOS `public.mime-type` key string, Android `android:scheme` value and `app_mime_scheme` value must be the ones you use in the **tidropbox_cb.html** redirect URI file:
 
 |tidropbox_cb.html|tiapp.xml iOS|tiapp.xml Android|TiDropbox.init()|
 |--|--|--|--|
@@ -189,12 +189,12 @@ TiDropbox.generateAuthUrl(function(e){
 **`TiDropbox.callMethod(parameters)`**
 |Parameters|Type|Required|Description |
 |--|--|--|--|
-| **methodStr** | *String* | ✅ | represent API target. It contains Dropbox's namespace and method name. eg. `"files/upload"` or `"sharing/share_folder"` or more at [/lib/dropboxAPIv2.js]|
+| **methodStr** | *String* | ✅ | Represent API target. It contains Dropbox's namespace and method name: `"files/upload"` or `"sharing/share_folder"` or more at [/lib/dropboxAPIv2.js]|
 | **paramsObj** | *Object* | ✅ | Parameters object, depends on resource field|
 | **fileBin** | *Blob/null* | ✅ | File to upload, depends on resource field |
 | **onSuccessCallback** | *Function* | ✅ | Callback on succes |
 | **onErrorCallback** | *Function* | ✅ | Callback on error |
-| **callMethodXhrObjCallback** | *Function* | | return directly the *TiDropbox.xhr* object of the current *TiDropbox.callMethod*, so you can invoke all xhr methods you need: abort, onload, onsendstream, ecc.. |
+| **callMethodXhrObjCallback** | *Function* | | Return directly the *TiDropbox.xhr* object of the current `TiDropbox.callMethod`, so you can invoke all xhr methods you need: abort, onload, onsendstream, ecc.. |
 
 After obtaining a valid token, you can call any method:
 ```js
@@ -235,6 +235,7 @@ TiDropbox.callMethod({
 | **success** | *Boolean* | Response result|
 | **access_token** | *String* | Access token key|
 | **msg** | *String* | Description of the response result |
+
 Revoke the access token.
 ```js
 TiDropbox.revokeAccessToken(function (e) {
