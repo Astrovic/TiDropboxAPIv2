@@ -45,7 +45,7 @@ You can use the contents of my **tidropbox_cb.html** file. You just need to repl
         const isHuawei = /(huawei)/i.test(navigator.userAgent);
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
-        const scheme = "tidropbox"; // <-- Must be the one used in the tiapp.xml public.mime-type string and android:scheme value
+        const scheme = "tidropbox"; // <-- Must be the one used in the tiapp.xml public.mime-type string and android:scheme value, and in app_mime_scheme in TiDropbox.init()
         const host = "dropbox_token";
         var url = scheme + "://" + host +"?" + (code || window.location.hash);
         var intent = "intent://"+host+"?"+ (code || window.location.hash) + "#Intent;scheme="+scheme+";action=android.intent.action.VIEW;end";
@@ -142,14 +142,14 @@ iOS `public.mime-type` key string and Android `android:scheme` value must be the
 | **APP_SECRET** | *String* | ✅ | App secret in Dropbox Console App|
 | **redirectUri** | *String* | ✅ | One of your OAuth2 Redirect URIs set to Dropbox Console App |
 | **response_type** | *String* | ✅ | `code` or `token`. Token flow expires after 4 hours |
-| **app_mime_scheme** | *String* | ✅ | App mime scheme set to tiapp.xml (on Android) and used inside your `redirectUri` page to be able to get back to the app after login|
+| **app_mime_scheme** | *String* | ✅ | App mime/scheme set to tiapp.xml and used inside your redirect URI page (**https://../tidropbox_cb.html**) to be able to get back to the app after login|
 
 You need a [Dropbox App key], and a `redirectUri` which must be configured on **Redirect URIs** field of your Dropbox App Settings, on *OAuth 2* section.
 ```js
 var TiDropbox = require("ti.dropbox").TiDropbox;
 TiDropbox.init({
-    APP_KEY: 'e9tribefg77q4wg', /*<YOUR APP KEY HERE>*/
-    APP_SECRET: 'dkrhmji4z14k2wf', /*<YOUR APP SECRET HERE>*/
+    APP_KEY: '<YOUR APP KEY HERE>', /*<YOUR APP KEY HERE>*/
+    APP_SECRET: '<YOUR APP SECRET HERE>', /*<YOUR APP SECRET HERE>*/
     redirectUri: 'https://astrovicapps.com/_apptest/tidropbox_cb.html', /*<YOUR OAuth2 Redirect URI SET TO DROPBOX APP CONSOLE>*/
     response_type: "code", // "token" or "code". Token flow expires after 4 hours!
     app_mime_scheme: "tidropbox" // *<YOUR APP MIME SCHEME HERE SET TO TIAPP.XML>*/
@@ -260,8 +260,8 @@ That's all! :)
 ```js
 var TiDropbox = require("ti.dropbox").TiDropbox;
 TiDropbox.init({
-    APP_KEY: 'e9tribefg77q4wg', /*<YOUR APP KEY HERE>*/
-    APP_SECRET: 'dkrhmji4z14k2wf', /*<YOUR APP SECRET HERE>*/
+    APP_KEY: '<YOUR APP KEY HERE>', /*<YOUR APP KEY HERE>*/
+    APP_SECRET: '<YOUR APP SECRET HERE>', /*<YOUR APP SECRET HERE>*/
     redirectUri: 'https://astrovicapps.com/_apptest/tidropbox_cb.html', /*<YOUR OAuth2 Redirect URI SET TO DROPBOX APP CONSOLE>*/
     response_type: "code", // "token" or "code". Token flow expires after 4 hours!
     app_mime_scheme: "tidropbox" // *<YOUR APP MIME SCHEME HERE SET TO TIAPP.XML>*/
@@ -347,8 +347,8 @@ function fileUpload() {
 ```js
 var TiDropbox = require("ti.dropbox").TiDropbox;
 TiDropbox.init({
-    APP_KEY: 'e9tribefg77q4wg', /*<YOUR APP KEY HERE>*/
-    APP_SECRET: 'dkrhmji4z14k2wf', /*<YOUR APP SECRET HERE>*/
+    APP_KEY: '<YOUR APP KEY HERE>', /*<YOUR APP KEY HERE>*/
+    APP_SECRET: '<YOUR APP SECRET HERE>', /*<YOUR APP SECRET HERE>*/
     redirectUri: 'https://astrovicapps.com/_apptest/tidropbox_cb.html', /*<YOUR OAuth2 Redirect URI SET TO DROPBOX APP CONSOLE>*/
     response_type: "code", // "token" or "code". Token flow expires after 4 hours!
     app_mime_scheme: "tidropbox" // *<YOUR APP MIME SCHEME HERE SET TO TIAPP.XML>*/
