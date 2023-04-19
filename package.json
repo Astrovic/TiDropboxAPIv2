@@ -27,6 +27,6 @@
   },
   "homepage": "https://github.com/Astrovic/TiDropboxAPIv2#readme",
   "dependencies": {
-    "titaniumifier": "^1.5.1"
+    "titaniumifier": "^1.5.2"
   }
 }
